@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/market/:symbol*", "destination": "/market/[symbol]" },
+    { "source": "/(.*)", "destination": "/" }
+  ]
+}
