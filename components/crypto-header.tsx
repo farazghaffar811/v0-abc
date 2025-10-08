@@ -5,7 +5,7 @@ export function CryptoHeader({ balance }: { balance: string }) {
     <div className="flex items-center justify-between p-4 bg-white text-gray-800">
       <div className="w-8 h-8 rounded-full overflow-hidden">
         <Image
-          src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/design-mode-images/profile.jpg%281%29%281%29-Wwid3uAeo3KSujAwDTxiPiK2DaniRU.jpeg"
+          src="/images/design-mode/profile.jpg%281%29%281%29.jpeg"
           alt="Profile"
           width={32}
           height={32}

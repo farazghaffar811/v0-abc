@@ -84,7 +84,7 @@ export default function RegisterPage() {
         <div className="w-full max-w-sm space-y-8">
           <div className="text-center">
             <Image
-              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/design-mode-images/logo_super_scjghk%281%29%281%29-R1ID3sEkpiILiV2cLUngjz3rQImYkc.png"
+              src="/images/design-mode/logo_super_scjghk%281%29%281%29.png"
               alt="SuperCoin"
               width={200}
               height={50}

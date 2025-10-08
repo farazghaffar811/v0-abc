@@ -47,7 +47,7 @@ export default function LoginForm() {
         <div className="text-center">
           <div className="relative mx-auto overflow-hidden" style={{ width: 200, height: 35 }}>
             <Image
-              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/design-mode-images/logo_super_scjghk%281%29%281%29-R1ID3sEkpiILiV2cLUngjz3rQImYkc.png"
+              src="/images/design-mode/logo_super_scjghk%281%29%281%29.png"
               alt="SuperCoin"
               width={200}
               height={50}

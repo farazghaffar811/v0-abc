@@ -56,7 +56,7 @@ export default function PlatformWalletPage() {
                     <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
                       <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white bg-white">
                         <Image
-                          src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/design-mode-images/logo_super_scjghk%281%29%281%29-R1ID3sEkpiILiV2cLUngjz3rQImYkc.png"
+                          src="/images/design-mode/logo_super_scjghk%281%29%281%29.png"
                           alt="SuperCoin Logo"
                           width={32}
                           height={32}
