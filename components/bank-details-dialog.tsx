@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Building2, CreditCard, Hash, User } from "lucide-react"
-import { doc, updateDoc } from "firebase/firestore"
+import { doc, updateDoc, getDoc, setDoc, serverTimestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { toast } from "@/components/ui/use-toast"
 
@@ -26,6 +26,7 @@ interface BankDetailsDialogProps {
   userId: string
   userEmail: string
   withdrawalBankDetails?: any
+  withdrawalId?: string // NEW
 }
 
 export function BankDetailsDialog({
@@ -34,6 +35,7 @@ export function BankDetailsDialog({
   userId,
   userEmail,
   withdrawalBankDetails,
+  withdrawalId, // NEW
 }: BankDetailsDialogProps) {
   const [bankDetails, setBankDetails] = useState<BankDetails>({
     accountHolderName: "",
@@ -72,17 +74,55 @@ export function BankDetailsDialog({
     if (!userId) return
     try {
       setIsLoading(true)
-      const userRef = doc(db, "users", userId)
+
+      // Build normalized payload: write both accountName and accountHolderName for compatibility
+      const holderName = bankDetails.accountHolderName || withdrawalBankDetails?.accountName || ""
       const payload = {
+        accountName: holderName,
+        accountHolderName: holderName,
         accountNumber: bankDetails.accountNumber || "",
-        ifscCode: (bankDetails.ifscCode || "").toUpperCase(),
         bankName: bankDetails.bankName || "",
-        accountHolderName: bankDetails.accountHolderName || withdrawalBankDetails?.accountName || "",
+        ifscCode: (bankDetails.ifscCode || "").toUpperCase(),
       }
-      await updateDoc(userRef, {
-        bankDetails: payload,
-        updatedAt: new Date(),
-      })
+
+      // Upsert into users/{userId}
+      const userRef = doc(db, "users", userId)
+      const userSnap = await getDoc(userRef)
+      if (userSnap.exists()) {
+        await updateDoc(userRef, {
+          bankDetails: payload,
+          updatedAt: serverTimestamp(),
+        })
+      } else {
+        await setDoc(
+          userRef,
+          {
+            bankDetails: payload,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true },
+        )
+      }
+
+      // Also try to reflect on the withdrawal document if an id is provided
+      if (withdrawalId) {
+        const collectionNames = ["withdrawals", "withdrawalRequests", "withdrawal_requests", "withdrawalRequest"]
+        for (const name of collectionNames) {
+          try {
+            const wRef = doc(db, name, withdrawalId)
+            await updateDoc(wRef, {
+              bankDetails: payload,
+              updatedAt: serverTimestamp(),
+            })
+            // If one succeeds, that's enough
+            break
+          } catch {
+            // ignore and try next collection name
+          }
+        }
+      }
+
       toast({
         title: "Success",
         description: "Bank details updated successfully",

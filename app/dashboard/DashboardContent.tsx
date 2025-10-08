@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
-import { collection, query, where, getDocs, orderBy, addDoc, serverTimestamp } from "firebase/firestore"
+import { collection, query, getDocs, orderBy, addDoc, serverTimestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { UserEditDialog } from "@/components/user-edit-dialog"
@@ -65,14 +65,11 @@ export default function DashboardContent() {
   const fetchUsers = async () => {
     setIsLoading(true)
     try {
-      let usersQuery = collection(db, "users")
-      if (searchEmail) {
-        usersQuery = query(usersQuery, where("email", "==", searchEmail))
-      } else {
-        // Sort users by createdAt in descending order (newest first)
-        usersQuery = query(usersQuery, orderBy("createdAt", "desc"))
-      }
+      const usersQueryBase = collection(db, "users")
+      // Always order by createdAt for a stable list
+      const usersQuery = query(usersQueryBase, orderBy("createdAt", "desc"))
       const querySnapshot = await getDocs(usersQuery)
+
       const userList = querySnapshot.docs.map((doc) => {
         const data = doc.data()
         return {
@@ -100,8 +97,17 @@ export default function DashboardContent() {
         } as UserProfile
       })
 
+      // Client-side partial search on multiple fields
+      const term = (searchEmail || "").toLowerCase().trim()
+      const searchedUsers = term
+        ? userList.filter((u) => {
+            const fields = [u.email || "", u.displayName || "", u.uid || "", u.phoneNumber || ""]
+            return fields.some((f) => f.toLowerCase().includes(term))
+          })
+        : userList
+
       // Filter out the old admin email
-      const filteredUsers = userList.filter((user) => user.email !== "admin@ucoin.com")
+      const filteredUsers = searchedUsers.filter((user) => user.email !== "admin@ucoin.com")
       setUsers(filteredUsers)
       console.log("Fetched users:", filteredUsers) // Debug log
     } catch (error) {

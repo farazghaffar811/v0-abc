@@ -331,6 +331,7 @@ export default function WithdrawalPage() {
           userId={selectedWithdrawal.userId}
           userEmail={selectedWithdrawal.userEmail}
           withdrawalBankDetails={selectedWithdrawal.bankDetails}
+          withdrawalId={selectedWithdrawal.id} // NEW
         />
       )}
     </div>
