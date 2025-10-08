@@ -1,10 +1,8 @@
-// Force Next.js to use Tailwind v3 via PostCSS and not the Tailwind v4 plugin.
-// Keep this minimal to avoid requiring extra packages like 'autoprefixer'.
-
+// Tailwind v3 PostCSS pipeline
+// Ensures Next uses Tailwind v3 instead of trying to load the v4 plugin.
 module.exports = {
   plugins: {
     tailwindcss: {},
-    // If you later add 'autoprefixer' to devDependencies, you can enable it here:
-    // autoprefixer: {},
+    autoprefixer: {},
   },
 }
