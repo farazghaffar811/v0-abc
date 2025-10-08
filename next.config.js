@@ -13,7 +13,8 @@ const nextConfig = {
           {
             key: "Access-Control-Allow-Headers",
             value:
-              "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version",
+              "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, " +
+              "Content-MD5, Content-Type, Date, X-Api-Version",
           },
         ],
       },
@@ -28,6 +29,7 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
+  // ✅ Allow remote images from your Vercel Blob Storage
   images: {
     remotePatterns: [
       {
@@ -35,6 +37,7 @@ const nextConfig = {
         hostname: "hebbkx1anhila5yf.public.blob.vercel-storage.com",
       },
     ],
+    formats: ["image/avif", "image/webp"],
   },
 };
 
