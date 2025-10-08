@@ -29,12 +29,31 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
-  // ✅ Allow remote images from your Vercel Blob Storage
+  // ✅ Allow all your remote image sources
   images: {
     remotePatterns: [
+      // your Vercel Blob Storage
       {
         protocol: "https",
         hostname: "hebbkx1anhila5yf.public.blob.vercel-storage.com",
+      },
+      // CoinGecko and CoinMarketCap logos
+      {
+        protocol: "https",
+        hostname: "assets.coingecko.com",
+      },
+      {
+        protocol: "https",
+        hostname: "s2.coinmarketcap.com",
+      },
+      // fallback CDN sources used in your code
+      {
+        protocol: "https",
+        hostname: "upload.wikimedia.org",
+      },
+      {
+        protocol: "https",
+        hostname: "cryptologos.cc",
       },
     ],
     formats: ["image/avif", "image/webp"],
