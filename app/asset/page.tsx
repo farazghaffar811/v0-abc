@@ -27,6 +27,7 @@ interface Withdrawal {
     ifscCode: string
   }
   declineComment?: string
+  rejectionReason?: string
 }
 
 export default function AssetPage() {
@@ -51,11 +52,21 @@ export default function AssetPage() {
       q,
       (snapshot) => {
         console.log("Snapshot received, docs:", snapshot.docs.length)
-        const withdrawalData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
-        })) as Withdrawal[]
+        const withdrawalData = snapshot.docs.map((doc) => {
+          const raw = doc.data() as any
+          return {
+            id: doc.id,
+            userId: raw.userId || "",
+            userEmail: raw.userEmail || raw.email || "",
+            amount: Number(raw.amount || 0),
+            status: (raw.status || "pending") as Withdrawal["status"],
+            createdAt: raw.createdAt?.toDate ? raw.createdAt.toDate() : new Date(),
+            bankDetails: raw.bankDetails || undefined,
+            // prefer the new admin field but remain backward compatible
+            rejectionReason: raw.rejectionReason || raw.declineComment || raw.reason || undefined,
+            declineComment: raw.declineComment || undefined,
+          } as Withdrawal
+        })
         setWithdrawals(withdrawalData)
         setIsLoading(false)
       },
@@ -128,8 +139,10 @@ export default function AssetPage() {
                   {withdrawal.bankDetails && (
                     <p className="text-sm text-gray-500">Bank: {withdrawal.bankDetails.bankName}</p>
                   )}
-                  {withdrawal.status === "rejected" && withdrawal.declineComment && (
-                    <p className="text-sm text-red-500 mt-2">Reason: {withdrawal.declineComment}</p>
+                  {withdrawal.status === "rejected" && (withdrawal.rejectionReason || withdrawal.declineComment) && (
+                    <p className="text-sm text-red-500 mt-2">
+                      Reason: {withdrawal.rejectionReason || withdrawal.declineComment}
+                    </p>
                   )}
                 </div>
                 <Badge
