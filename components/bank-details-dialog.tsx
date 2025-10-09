@@ -9,7 +9,19 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Building2, CreditCard, Hash, User } from "lucide-react"
-import { doc, updateDoc, getDoc, setDoc, serverTimestamp } from "firebase/firestore"
+import {
+  doc,
+  updateDoc,
+  getDoc,
+  setDoc,
+  serverTimestamp,
+  collection,
+  getDocs,
+  query,
+  orderBy,
+  limit,
+  addDoc,
+} from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { toast } from "@/components/ui/use-toast"
 
@@ -26,7 +38,7 @@ interface BankDetailsDialogProps {
   userId: string
   userEmail: string
   withdrawalBankDetails?: any
-  withdrawalId?: string // NEW
+  withdrawalId?: string
 }
 
 export function BankDetailsDialog({
@@ -35,7 +47,7 @@ export function BankDetailsDialog({
   userId,
   userEmail,
   withdrawalBankDetails,
-  withdrawalId, // NEW
+  withdrawalId,
 }: BankDetailsDialogProps) {
   const [bankDetails, setBankDetails] = useState<BankDetails>({
     accountHolderName: "",
@@ -47,9 +59,7 @@ export function BankDetailsDialog({
 
   useEffect(() => {
     if (open && withdrawalBankDetails) {
-      console.log("Loading bank details from withdrawal:", withdrawalBankDetails)
-
-      // Map the bank details from the withdrawal document
+      // Pre-fill fields from the withdrawal doc, handling multiple key variants
       setBankDetails({
         accountHolderName: withdrawalBankDetails.accountName || withdrawalBankDetails.accountHolderName || "",
         accountNumber: withdrawalBankDetails.accountNumber || "",
@@ -57,7 +67,6 @@ export function BankDetailsDialog({
         ifscCode: withdrawalBankDetails.ifscCode || withdrawalBankDetails.ifsc || "",
       })
     } else if (open) {
-      // Reset if no bank details provided
       setBankDetails({
         accountHolderName: "",
         accountNumber: "",
@@ -70,6 +79,36 @@ export function BankDetailsDialog({
   const hasBankDetails =
     bankDetails.accountHolderName || bankDetails.accountNumber || bankDetails.bankName || bankDetails.ifscCode
 
+  async function syncUserBankWallets(userId: string, holderName: string) {
+    // Map to the fields the user app expects in users/{uid}/bankWallets
+    const walletPayload = {
+      holderName: holderName,
+      bankName: bankDetails.bankName || "",
+      accountNumber: bankDetails.accountNumber || "",
+      ifscCode: (bankDetails.ifscCode || "").toUpperCase(),
+      updatedAt: serverTimestamp(),
+      updatedByAdmin: true,
+    }
+
+    const walletsCol = collection(db, "users", userId, "bankWallets")
+    const qLatest = query(walletsCol, orderBy("createdAt", "desc"), limit(1))
+    const snap = await getDocs(qLatest)
+
+    if (!snap.empty) {
+      // Update the most recent wallet doc
+      const ref = snap.docs[0].ref
+      await updateDoc(ref, walletPayload)
+    } else {
+      // Create a new primary wallet doc if none exists yet
+      await addDoc(walletsCol, {
+        ...walletPayload,
+        createdAt: serverTimestamp(),
+        primary: true,
+        source: "admin",
+      })
+    }
+  }
+
   async function handleUpdate() {
     if (!userId) return
     try {
@@ -77,7 +116,7 @@ export function BankDetailsDialog({
 
       // Build normalized payload: write both accountName and accountHolderName for compatibility
       const holderName = bankDetails.accountHolderName || withdrawalBankDetails?.accountName || ""
-      const payload = {
+      const normalized = {
         accountName: holderName,
         accountHolderName: holderName,
         accountNumber: bankDetails.accountNumber || "",
@@ -90,14 +129,14 @@ export function BankDetailsDialog({
       const userSnap = await getDoc(userRef)
       if (userSnap.exists()) {
         await updateDoc(userRef, {
-          bankDetails: payload,
+          bankDetails: normalized,
           updatedAt: serverTimestamp(),
         })
       } else {
         await setDoc(
           userRef,
           {
-            bankDetails: payload,
+            bankDetails: normalized,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
           },
@@ -105,27 +144,29 @@ export function BankDetailsDialog({
         )
       }
 
-      // Also try to reflect on the withdrawal document if an id is provided
+      // Keep the user app in sync: update or create latest users/{uid}/bankWallets doc
+      await syncUserBankWallets(userId, holderName)
+
+      // Optionally mirror on the withdrawal doc if present
       if (withdrawalId) {
         const collectionNames = ["withdrawals", "withdrawalRequests", "withdrawal_requests", "withdrawalRequest"]
         for (const name of collectionNames) {
           try {
             const wRef = doc(db, name, withdrawalId)
             await updateDoc(wRef, {
-              bankDetails: payload,
+              bankDetails: normalized,
               updatedAt: serverTimestamp(),
             })
-            // If one succeeds, that's enough
             break
           } catch {
-            // ignore and try next collection name
+            // try next collection name
           }
         }
       }
 
       toast({
         title: "Success",
-        description: "Bank details updated successfully",
+        description: "Bank details updated and synced to the user app",
       })
     } catch (error: any) {
       console.error("Error updating bank details:", error)

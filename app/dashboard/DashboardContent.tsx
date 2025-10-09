@@ -1,8 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useSearchParams } from "next/navigation"
-import { collection, query, getDocs, orderBy, addDoc, serverTimestamp } from "firebase/firestore"
+import type React from "react"
+
+import { useEffect, useState } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { collection, query as fsQuery, getDocs, orderBy, addDoc, serverTimestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { UserEditDialog } from "@/components/user-edit-dialog"
@@ -22,23 +24,30 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/components/ui/use-toast"
-import { MessageSquare } from "lucide-react"
+import { MessageSquare, Search, X } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 
 export default function DashboardContent() {
+  const [allUsers, setAllUsers] = useState<UserProfile[]>([])
   const [users, setUsers] = useState<UserProfile[]>([])
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+
   const searchParams = useSearchParams()
-  const searchEmail = searchParams.get("search")
+  const router = useRouter()
+  const pathname = usePathname()
+  const initialSearch = (searchParams.get("search") || "").trim()
+
+  const [searchTerm, setSearchTerm] = useState(initialSearch)
+
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false)
   const [selectedUserEmail, setSelectedUserEmail] = useState<string | null>(null)
   const [resetSuccess, setResetSuccess] = useState<boolean | null>(null)
   const auth = getAuth()
 
-  // New state for announcement dialog
+  // Announcement dialog state
   const [isAnnouncementDialogOpen, setIsAnnouncementDialogOpen] = useState(false)
   const [announcementMessage, setAnnouncementMessage] = useState("")
   const [announcementUser, setAnnouncementUser] = useState<UserProfile | null>(null)
@@ -62,18 +71,17 @@ export default function DashboardContent() {
     }
   }
 
+  // Fetch once, then filter client-side so partial search works for any letters
   const fetchUsers = async () => {
     setIsLoading(true)
     try {
-      const usersQueryBase = collection(db, "users")
-      // Always order by createdAt for a stable list
-      const usersQuery = query(usersQueryBase, orderBy("createdAt", "desc"))
-      const querySnapshot = await getDocs(usersQuery)
-
-      const userList = querySnapshot.docs.map((doc) => {
-        const data = doc.data()
+      const usersBase = collection(db, "users")
+      const q = fsQuery(usersBase, orderBy("createdAt", "desc"))
+      const snap = await getDocs(q)
+      const list = snap.docs.map((d) => {
+        const data = d.data()
         return {
-          uid: doc.id,
+          uid: d.id,
           email: data.email || "",
           displayName: data.displayName || "",
           balance: data.balance || 0,
@@ -97,19 +105,9 @@ export default function DashboardContent() {
         } as UserProfile
       })
 
-      // Client-side partial search on multiple fields
-      const term = (searchEmail || "").toLowerCase().trim()
-      const searchedUsers = term
-        ? userList.filter((u) => {
-            const fields = [u.email || "", u.displayName || "", u.uid || "", u.phoneNumber || ""]
-            return fields.some((f) => f.toLowerCase().includes(term))
-          })
-        : userList
-
       // Filter out the old admin email
-      const filteredUsers = searchedUsers.filter((user) => user.email !== "admin@ucoin.com")
-      setUsers(filteredUsers)
-      console.log("Fetched users:", filteredUsers) // Debug log
+      const filtered = list.filter((u) => u.email !== "admin@ucoin.com")
+      setAllUsers(filtered)
     } catch (error) {
       console.error("Error fetching users:", error)
       toast({
@@ -117,16 +115,63 @@ export default function DashboardContent() {
         description: "Failed to fetch users. Please try again.",
         variant: "destructive",
       })
+    } finally {
+      setIsLoading(false)
     }
-    setIsLoading(false)
   }
 
   useEffect(() => {
     fetchUsers()
-  }, [searchEmail])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Derived filtering (partial match on multiple fields)
+  useEffect(() => {
+    const term = searchTerm.toLowerCase()
+    const next = term
+      ? allUsers.filter((u) => {
+          const fields = [
+            u.email || "",
+            u.displayName || "",
+            u.uid || "",
+            u.phoneNumber || "",
+            u.address || "",
+            u.referralCode || "",
+            u.referredBy || "",
+          ]
+          return fields.some((f) => f.toLowerCase().includes(term))
+        })
+      : allUsers
+    setUsers(next)
+  }, [allUsers, searchTerm])
+
+  // When URL changes elsewhere, keep state in sync
+  useEffect(() => {
+    const urlTerm = (searchParams.get("search") || "").trim()
+    setSearchTerm(urlTerm)
+  }, [searchParams])
+
+  const applySearchToUrl = (term: string) => {
+    const usp = new URLSearchParams(Array.from(searchParams.entries()))
+    if (term) {
+      usp.set("search", term)
+    } else {
+      usp.delete("search")
+    }
+    router.replace(`${pathname}?${usp.toString()}`)
+  }
+
+  const handleSubmitSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    applySearchToUrl(searchTerm.trim())
+  }
+
+  const handleClearSearch = () => {
+    setSearchTerm("")
+    applySearchToUrl("")
+  }
 
   const handleEditUser = (user: UserProfile) => {
-    console.log("Editing user:", user) // Debug log
     setSelectedUser(user)
     setIsEditDialogOpen(true)
   }
@@ -134,7 +179,6 @@ export default function DashboardContent() {
   const handleSaveUser = () => {
     setIsEditDialogOpen(false)
     setSelectedUser(null)
-    // Refresh the user list
     fetchUsers()
   }
 
@@ -154,7 +198,6 @@ export default function DashboardContent() {
     }
 
     try {
-      // Call API endpoint to update the user's password
       const response = await fetch("/api/admin/reset-password", {
         method: "POST",
         headers: {
@@ -201,7 +244,6 @@ export default function DashboardContent() {
     setIsSendingAnnouncement(true)
 
     try {
-      // Add announcement to user's announcements collection
       const userAnnouncementsRef = collection(db, "users", announcementUser.uid, "announcements")
       await addDoc(userAnnouncementsRef, {
         message: announcementMessage,
@@ -255,8 +297,31 @@ export default function DashboardContent() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col gap-3 mb-4 md:flex-row md:items-center md:justify-between">
         <h2 className="text-xl font-semibold">Member List ({users.length} users)</h2>
+
+        {/* Search Bar (partial match on multiple fields) */}
+        <form onSubmit={handleSubmitSearch} className="flex w-full max-w-lg items-center gap-2 md:ml-auto">
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by email, name, UID, phone, address, referral..."
+            aria-label="Search users"
+          />
+          <Button type="submit" variant="default" className="whitespace-nowrap">
+            <Search className="mr-2 h-4 w-4" />
+            Search
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleClearSearch}
+            className="whitespace-nowrap bg-transparent"
+          >
+            <X className="mr-2 h-4 w-4" />
+            Clear
+          </Button>
+        </form>
       </div>
 
       <div className="overflow-x-auto">
@@ -269,13 +334,18 @@ export default function DashboardContent() {
               <TableHead>Credit Score</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Withdrawal Status</TableHead>
-              <TableHead>Created</TableHead> {/* NEW */}
+              <TableHead>Created</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {users.map((user) => (
-              <TableRow key={user.uid} className={searchEmail && user.email === searchEmail ? "bg-yellow-100" : ""}>
+              <TableRow
+                key={user.uid}
+                className={
+                  searchTerm && user.email.toLowerCase().includes(searchTerm.toLowerCase()) ? "bg-yellow-50" : ""
+                }
+              >
                 <TableCell>
                   <div className="flex flex-col">
                     <span className="font-medium">{user.email}</span>
@@ -352,7 +422,7 @@ export default function DashboardContent() {
 
       {users.length === 0 && !isLoading && (
         <div className="text-center py-8 text-gray-500">
-          {searchEmail ? `No user found with email: ${searchEmail}` : "No users found"}
+          {searchTerm ? "No users match your search" : "No users found"}
         </div>
       )}
 
