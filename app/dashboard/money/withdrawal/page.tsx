@@ -1,7 +1,19 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDocs } from "firebase/firestore"
+import { useEffect, useState } from "react"
+import {
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  doc,
+  updateDoc,
+  getDocs,
+  getDoc,
+  runTransaction,
+  serverTimestamp,
+  addDoc,
+} from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -11,6 +23,16 @@ import { BankDetailsDialog } from "@/components/bank-details-dialog"
 import { toast } from "@/components/ui/use-toast"
 import { format } from "date-fns"
 import { CheckCircle, XCircle, Clock, Building2 } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 interface WithdrawalRequest {
   id: string
@@ -21,113 +43,108 @@ interface WithdrawalRequest {
   createdAt: any
   updatedAt?: any
   bankDetails?: any
+  rejectionReason?: string
 }
+
+const WITHDRAWAL_COLLECTION_NAMES = ["withdrawals", "withdrawalRequests", "withdrawal_requests", "withdrawalRequest"]
 
 export default function WithdrawalPage() {
   const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([])
   const [isLoading, setIsLoading] = useState(true)
+
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<WithdrawalRequest | null>(null)
   const [bankDetailsOpen, setBankDetailsOpen] = useState(false)
 
+  // Reject dialog state
+  const [rejectOpen, setRejectOpen] = useState(false)
+  const [rejectReason, setRejectReason] = useState("")
+  const [rejectTarget, setRejectTarget] = useState<WithdrawalRequest | null>(null)
+  const [isRejecting, setIsRejecting] = useState(false)
+
   useEffect(() => {
-    console.log("Setting up withdrawal listener...")
-
-    // Try multiple collection names
-    const collectionNames = ["withdrawals", "withdrawalRequests", "withdrawal_requests", "withdrawalRequest"]
-
+    // Set up listener on the first available withdrawals collection
     let unsubscribe: (() => void) | null = null
 
-    const setupListener = async () => {
-      for (const collectionName of collectionNames) {
+    const setup = async () => {
+      for (const collectionName of WITHDRAWAL_COLLECTION_NAMES) {
         try {
-          console.log(`Trying collection: ${collectionName}`)
           const withdrawalsRef = collection(db, collectionName)
           const q = query(withdrawalsRef, orderBy("createdAt", "desc"))
-
-          // Test if collection exists by trying to get docs
           const testSnapshot = await getDocs(q)
-          console.log(`Collection ${collectionName} found with ${testSnapshot.docs.length} documents`)
 
           unsubscribe = onSnapshot(
             q,
             (snapshot) => {
-              console.log(`Received ${snapshot.docs.length} withdrawal documents from ${collectionName}`)
-
-              const withdrawalData = snapshot.docs.map((doc) => {
-                const data = doc.data()
-                console.log(`Withdrawal document ${doc.id}:`, data)
-
+              const data: WithdrawalRequest[] = snapshot.docs.map((d) => {
+                const x = d.data() as any
                 return {
-                  id: doc.id,
-                  userId: data.userId || "",
-                  userEmail: data.userEmail || data.email || "",
-                  amount: data.amount || 0,
-                  status: data.status || "pending",
-                  createdAt: data.createdAt,
-                  updatedAt: data.updatedAt,
-                  bankDetails: data.bankDetails || null,
-                } as WithdrawalRequest
+                  id: d.id,
+                  userId: x.userId || "",
+                  userEmail: x.userEmail || x.email || "",
+                  amount: Number(x.amount || 0),
+                  status: (x.status || "pending") as WithdrawalRequest["status"],
+                  createdAt: x.createdAt,
+                  updatedAt: x.updatedAt,
+                  bankDetails: x.bankDetails || null,
+                  rejectionReason: x.rejectionReason || "",
+                }
               })
-
-              console.log("Processed withdrawal data:", withdrawalData)
-              setWithdrawals(withdrawalData)
+              setWithdrawals(data)
               setIsLoading(false)
             },
             (error) => {
               console.error(`Error listening to ${collectionName}:`, error)
-              if (collectionName === collectionNames[collectionNames.length - 1]) {
-                setIsLoading(false)
-              }
+              setIsLoading(false)
             },
           )
-
-          break // Successfully set up listener, exit loop
-        } catch (error) {
-          console.log(`Collection ${collectionName} not found or error:`, error)
-          if (collectionName === collectionNames[collectionNames.length - 1]) {
-            console.log("No withdrawal collections found")
+          // Successfully set up listener
+          break
+        } catch (err) {
+          // Try next collection name
+          if (collectionName === WITHDRAWAL_COLLECTION_NAMES[WITHDRAWAL_COLLECTION_NAMES.length - 1]) {
             setIsLoading(false)
           }
         }
       }
     }
 
-    setupListener()
+    setup()
 
     return () => {
-      if (unsubscribe) {
-        unsubscribe()
-      }
+      if (unsubscribe) unsubscribe()
     }
   }, [])
 
-  const handleStatusUpdate = async (withdrawalId: string, newStatus: string) => {
+  // Utility to find the actual withdrawal doc ref across possible collection names
+  async function findWithdrawalRef(withdrawalId: string) {
+    for (const name of WITHDRAWAL_COLLECTION_NAMES) {
+      const ref = doc(db, name, withdrawalId)
+      const snap = await getDoc(ref)
+      if (snap.exists()) {
+        return { ref, collectionName: name }
+      }
+    }
+    return null
+  }
+
+  const handleApproveOrComplete = async (withdrawalId: string, newStatus: "approved" | "completed") => {
     try {
-      console.log(`Updating withdrawal ${withdrawalId} to status ${newStatus}`)
-
-      // Try to update in multiple possible collections
-      const collectionNames = ["withdrawals", "withdrawalRequests", "withdrawal_requests", "withdrawalRequest"]
-
-      for (const collectionName of collectionNames) {
+      for (const name of WITHDRAWAL_COLLECTION_NAMES) {
         try {
-          const withdrawalRef = doc(db, collectionName, withdrawalId)
-          await updateDoc(withdrawalRef, {
+          const ref = doc(db, name, withdrawalId)
+          await updateDoc(ref, {
             status: newStatus,
-            updatedAt: new Date(),
+            updatedAt: serverTimestamp(),
           })
-
           toast({
             title: "Success",
             description: `Withdrawal ${newStatus} successfully`,
           })
-
-          console.log(`Successfully updated withdrawal in ${collectionName}`)
-          return // Success, exit function
-        } catch (error) {
-          console.log(`Failed to update in ${collectionName}:`, error)
+          return
+        } catch {
+          // try next
         }
       }
-
       throw new Error("Failed to update withdrawal in any collection")
     } catch (error) {
       console.error("Error updating withdrawal status:", error)
@@ -139,14 +156,113 @@ export default function WithdrawalPage() {
     }
   }
 
+  const openRejectDialog = (w: WithdrawalRequest) => {
+    setRejectTarget(w)
+    setRejectReason("")
+    setRejectOpen(true)
+  }
+
+  const handleRejectSubmit = async () => {
+    if (!rejectTarget) return
+    if (!rejectReason.trim()) {
+      toast({
+        title: "Reason required",
+        description: "Please provide a reason for rejecting this withdrawal.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsRejecting(true)
+
+    try {
+      // Locate the withdrawal document
+      const found = await findWithdrawalRef(rejectTarget.id)
+      if (!found) {
+        throw new Error("Withdrawal document not found")
+      }
+
+      const withdrawalRef = found.ref
+      const userRef = doc(db, "users", rejectTarget.userId)
+
+      // Atomically refund and set status to rejected
+      await runTransaction(db, async (txn) => {
+        const userSnap = await txn.get(userRef)
+        const amount = Number(rejectTarget.amount || 0)
+
+        // If user doc does not exist, initialize balances
+        if (!userSnap.exists()) {
+          txn.set(
+            userRef,
+            {
+              realBalance: amount,
+              balance: amount,
+              frozenAmount: 0,
+              updatedAt: serverTimestamp(),
+            },
+            { merge: true },
+          )
+        } else {
+          const u = userSnap.data() as any
+          const currentReal = Number(u.realBalance || 0)
+          const currentFrozen = Number(u.frozenAmount || 0)
+          const newReal = currentReal + amount
+          const newFrozen = Math.max(currentFrozen - amount, 0)
+
+          txn.update(userRef, {
+            realBalance: newReal,
+            balance: newReal, // keep in sync if used elsewhere
+            frozenAmount: newFrozen,
+            updatedAt: serverTimestamp(),
+          })
+        }
+
+        txn.update(withdrawalRef, {
+          status: "rejected",
+          rejectionReason: rejectReason.trim(),
+          updatedAt: serverTimestamp(),
+        })
+      })
+
+      // Notify the user inside their app with the reason
+      try {
+        await addDoc(collection(db, "users", rejectTarget.userId, "announcements"), {
+          message: `Your withdrawal request was rejected. Reason: ${rejectReason.trim()}`,
+          type: "withdrawal_rejected",
+          withdrawalId: rejectTarget.id,
+          amount: Number(rejectTarget.amount || 0),
+          createdAt: serverTimestamp(),
+          isRead: false,
+          fromAdmin: true,
+        })
+      } catch (announceErr) {
+        console.warn("Failed to add user announcement:", announceErr)
+      }
+
+      toast({
+        title: "Withdrawal rejected",
+        description: "Amount has been returned to the user's account and reason recorded.",
+      })
+      setRejectOpen(false)
+    } catch (error: any) {
+      console.error("Error rejecting withdrawal:", error)
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to reject withdrawal",
+        variant: "destructive",
+      })
+    } finally {
+      setIsRejecting(false)
+    }
+  }
+
   const handleViewBankDetails = (withdrawal: WithdrawalRequest) => {
-    console.log("Opening bank details for withdrawal:", withdrawal)
     setSelectedWithdrawal(withdrawal)
     setBankDetailsOpen(true)
   }
 
   const formatCurrency = (amount: number) => {
-    return `₹${amount.toLocaleString("en-IN", {
+    return `₹${Number(amount || 0).toLocaleString("en-IN", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`
@@ -155,48 +271,27 @@ export default function WithdrawalPage() {
   const formatDate = (timestamp: any) => {
     if (!timestamp) return "N/A"
     try {
-      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
+      const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp)
       return format(date, "MMM dd, yyyy HH:mm")
-    } catch (error) {
-      console.error("Error formatting date:", error)
+    } catch {
       return "Invalid Date"
     }
   }
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      pending: { variant: "secondary" as const, icon: Clock, color: "text-yellow-600" },
-      approved: { variant: "default" as const, icon: CheckCircle, color: "text-green-600" },
-      rejected: { variant: "destructive" as const, icon: XCircle, color: "text-red-600" },
-      completed: { variant: "default" as const, icon: CheckCircle, color: "text-green-600" },
+      pending: { variant: "secondary" as const, icon: Clock },
+      approved: { variant: "default" as const, icon: CheckCircle },
+      rejected: { variant: "destructive" as const, icon: XCircle },
+      completed: { variant: "default" as const, icon: CheckCircle },
     }
-
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending
     const Icon = config.icon
-
     return (
       <Badge variant={config.variant} className="flex items-center gap-1">
         <Icon className="h-3 w-3" />
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </Badge>
-    )
-  }
-
-  const getBankDetailsStatus = (bankDetails: any) => {
-    const hasDetails =
-      bankDetails &&
-      (bankDetails.accountName ||
-        bankDetails.accountHolderName ||
-        bankDetails.accountNumber ||
-        bankDetails.bankName ||
-        bankDetails.ifscCode)
-
-    return hasDetails ? (
-      <Badge variant="default" className="text-green-600">
-        Available
-      </Badge>
-    ) : (
-      <Badge variant="destructive">Not Set</Badge>
     )
   }
 
@@ -265,7 +360,20 @@ export default function WithdrawalPage() {
                       </TableCell>
                       <TableCell className="font-medium">{formatCurrency(withdrawal.amount)}</TableCell>
                       <TableCell>{getStatusBadge(withdrawal.status)}</TableCell>
-                      <TableCell>{getBankDetailsStatus(withdrawal.bankDetails)}</TableCell>
+                      <TableCell>
+                        {withdrawal.bankDetails &&
+                        (withdrawal.bankDetails.accountName ||
+                          withdrawal.bankDetails.accountHolderName ||
+                          withdrawal.bankDetails.accountNumber ||
+                          withdrawal.bankDetails.bankName ||
+                          withdrawal.bankDetails.ifscCode) ? (
+                          <Badge variant="default" className="text-green-600">
+                            Available
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive">Not Set</Badge>
+                        )}
+                      </TableCell>
                       <TableCell>{formatDate(withdrawal.createdAt)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -284,7 +392,7 @@ export default function WithdrawalPage() {
                               <Button
                                 variant="default"
                                 size="sm"
-                                onClick={() => handleStatusUpdate(withdrawal.id, "approved")}
+                                onClick={() => handleApproveOrComplete(withdrawal.id, "approved")}
                                 className="flex items-center gap-1"
                               >
                                 <CheckCircle className="h-4 w-4" />
@@ -293,7 +401,7 @@ export default function WithdrawalPage() {
                               <Button
                                 variant="destructive"
                                 size="sm"
-                                onClick={() => handleStatusUpdate(withdrawal.id, "rejected")}
+                                onClick={() => openRejectDialog(withdrawal)}
                                 className="flex items-center gap-1"
                               >
                                 <XCircle className="h-4 w-4" />
@@ -306,7 +414,7 @@ export default function WithdrawalPage() {
                             <Button
                               variant="default"
                               size="sm"
-                              onClick={() => handleStatusUpdate(withdrawal.id, "completed")}
+                              onClick={() => handleApproveOrComplete(withdrawal.id, "completed")}
                               className="flex items-center gap-1"
                             >
                               <CheckCircle className="h-4 w-4" />
@@ -324,6 +432,7 @@ export default function WithdrawalPage() {
         </CardContent>
       </Card>
 
+      {/* Bank details dialog */}
       {selectedWithdrawal && (
         <BankDetailsDialog
           open={bankDetailsOpen}
@@ -331,9 +440,51 @@ export default function WithdrawalPage() {
           userId={selectedWithdrawal.userId}
           userEmail={selectedWithdrawal.userEmail}
           withdrawalBankDetails={selectedWithdrawal.bankDetails}
-          withdrawalId={selectedWithdrawal.id} // NEW
+          withdrawalId={selectedWithdrawal.id}
         />
       )}
+
+      {/* Reject reason dialog */}
+      <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Reject Withdrawal</DialogTitle>
+            <DialogDescription>
+              Provide a reason for rejecting this withdrawal. The user will see this message in their account.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="text-sm">
+              <div>
+                <span className="font-medium">User:</span>{" "}
+                <span className="text-gray-600">{rejectTarget?.userEmail}</span>
+              </div>
+              <div>
+                <span className="font-medium">Amount:</span>{" "}
+                <span className="text-gray-600">{formatCurrency(rejectTarget?.amount || 0)}</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="rejection-reason">Reason</Label>
+              <Textarea
+                id="rejection-reason"
+                placeholder="Write the rejection reason..."
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                className="min-h-[120px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectOpen(false)} disabled={isRejecting}>
+              Cancel
+            </Button>
+            <Button onClick={handleRejectSubmit} disabled={isRejecting || !rejectReason.trim()}>
+              {isRejecting ? "Rejecting..." : "Reject Withdrawal"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
