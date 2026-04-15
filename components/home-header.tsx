@@ -11,15 +11,24 @@ import Link from "next/link"
 interface UserBalance {
   realBalance?: number
   balance?: number
+  frozenAmount?: number
+  creditScore?: number
+  status?: string
+  isFrozen?: boolean
+  ban?: string
+  withdrawalStatus?: string
+  withdrawalProhibited?: boolean
 }
 
 export function HomeHeader() {
   const { user } = useAuth()
   const [userBalance, setUserBalance] = useState<UserBalance>({})
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     if (!user?.uid) return
 
+    setIsLoading(true)
     const unsubscribe = onSnapshot(
       doc(db, "users", user.uid),
       (doc) => {
@@ -27,31 +36,43 @@ export function HomeHeader() {
           const userData = doc.data() as UserBalance
           setUserBalance(userData)
         }
+        setIsLoading(false)
       },
       (error) => {
         console.error("Error fetching user balance:", error)
+        setIsLoading(false)
       },
     )
 
     return () => unsubscribe()
   }, [user?.uid])
 
+  const displayBalance = isLoading ? "Loading..." : formatCurrency(userBalance.realBalance || userBalance.balance || 0)
+  const displayFrozen = isLoading ? "0" : formatCurrency(userBalance.frozenAmount || 0)
+
   return (
     <header className="bg-white shadow-sm border-b">
       <div className="flex items-center justify-between p-4">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+        <div className="flex items-center space-x-3 flex-1">
+          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
             <span className="text-white font-bold text-sm">SC</span>
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <h1 className="text-lg font-semibold text-gray-900">Supercoin</h1>
-            <p className="text-sm text-gray-600">
-              Balance: {formatCurrency(userBalance.realBalance || userBalance.balance || 0)}
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="text-sm text-gray-600 truncate">
+                Available: <span className="font-semibold text-green-600">{displayBalance}</span>
+              </p>
+              {userBalance.frozenAmount ? (
+                <p className="text-sm text-gray-600 truncate">
+                  Frozen: <span className="font-semibold text-red-600">{displayFrozen}</span>
+                </p>
+              ) : null}
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 flex-shrink-0">
           <button className="p-2 text-gray-600 hover:text-gray-900">
             <Bell className="w-5 h-5" />
           </button>
