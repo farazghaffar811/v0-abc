@@ -102,7 +102,7 @@ export default function UsersPage() {
           {users.map((user) => (
             <TableRow key={user.uid}>
               <TableCell>{user.email}</TableCell>
-              <TableCell>${user.balance?.toFixed(2) || "0.00"}</TableCell>
+              <TableCell>৳{user.balance?.toFixed(2) || "0.00"}</TableCell>
               <TableCell>
                 <Button
                   onClick={() => {

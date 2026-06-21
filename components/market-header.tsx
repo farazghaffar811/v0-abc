@@ -64,7 +64,7 @@ export function MarketHeader({ data, symbol = "BTCUSDT", isUpdating = false }: M
       {/* Price Information */}
       <div className="px-4 pb-4">
         <div className="flex items-baseline gap-2 mb-2">
-          <span className="text-2xl font-bold">${formatPrice(data?.lastPrice)}</span>
+          <span className="text-2xl font-bold">৳{formatPrice(data?.lastPrice)}</span>
           <span className={`text-sm font-medium ${isPositive ? "text-green-500" : "text-red-500"}`}>
             {isPositive ? "+" : ""}
             {formatPercentage(priceChange)}%
