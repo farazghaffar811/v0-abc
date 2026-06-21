@@ -233,7 +233,7 @@ export default function ProfilePage() {
                     key={amount}
                     className="border border-gray-300 rounded-md p-4 text-center h-16 flex items-center justify-center text-lg cursor-not-allowed"
                   >
-                    ₹{amount.toLocaleString("en-IN")}
+                    ৳{amount.toLocaleString("en-BD")}
                   </div>
                 ))}
               </div>

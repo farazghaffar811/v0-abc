@@ -17,10 +17,12 @@ export default function AddBankWalletPage() {
   const [isLoading, setIsLoading] = useState(false)
 
   const [formData, setFormData] = useState({
-    holderName: "",
-    bankName: "",
+    name: "",
+    routingNumber: "",
     accountNumber: "",
-    ifscCode: "",
+    bankName: "",
+    bankBranch: "",
+    bankDistrict: "",
   })
 
   const handleSave = async () => {
@@ -33,7 +35,7 @@ export default function AddBankWalletPage() {
       return
     }
 
-    if (!formData.holderName || !formData.bankName || !formData.accountNumber || !formData.ifscCode) {
+    if (!formData.name || !formData.routingNumber || !formData.accountNumber || !formData.bankName || !formData.bankBranch || !formData.bankDistrict) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -75,11 +77,31 @@ export default function AddBankWalletPage() {
 
       <div className="p-4 space-y-6">
         <div className="space-y-2">
-          <Label>Holder's name</Label>
+          <Label>Name</Label>
           <Input
-            placeholder="Please enter holder's name"
-            value={formData.holderName}
-            onChange={(e) => setFormData({ ...formData, holderName: e.target.value })}
+            placeholder="Please enter your name"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            className="bg-white"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Routing Number</Label>
+          <Input
+            placeholder="Please enter routing number"
+            value={formData.routingNumber}
+            onChange={(e) => setFormData({ ...formData, routingNumber: e.target.value })}
+            className="bg-white"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Account Number</Label>
+          <Input
+            placeholder="Please enter account number"
+            value={formData.accountNumber}
+            onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
             className="bg-white"
           />
         </div>
@@ -95,21 +117,21 @@ export default function AddBankWalletPage() {
         </div>
 
         <div className="space-y-2">
-          <Label>A/C No</Label>
+          <Label>Bank Branch</Label>
           <Input
-            placeholder="Please enter A/C No"
-            value={formData.accountNumber}
-            onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
+            placeholder="Please enter bank branch"
+            value={formData.bankBranch}
+            onChange={(e) => setFormData({ ...formData, bankBranch: e.target.value })}
             className="bg-white"
           />
         </div>
 
         <div className="space-y-2">
-          <Label>IFSC Code</Label>
+          <Label>Bank District</Label>
           <Input
-            placeholder="Please enter IFSC Code"
-            value={formData.ifscCode}
-            onChange={(e) => setFormData({ ...formData, ifscCode: e.target.value })}
+            placeholder="Please enter bank district"
+            value={formData.bankDistrict}
+            onChange={(e) => setFormData({ ...formData, bankDistrict: e.target.value })}
             className="bg-white"
           />
         </div>

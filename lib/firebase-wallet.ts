@@ -45,10 +45,12 @@ export async function createDigitalWallet(userId: string, walletData: Omit<Digit
 export interface BankWallet {
   id?: string
   userId: string
-  holderName: string
-  bankName: string
+  name: string
+  routingNumber: string
   accountNumber: string
-  ifscCode: string
+  bankName: string
+  bankBranch: string
+  bankDistrict: string
   createdAt?: Date
   updatedAt?: Date
 }
