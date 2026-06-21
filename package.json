@@ -5,7 +5,7 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev",
-    "lint": "next lint",
+    "lint": "eslint .",
     "setup-db": "tsx scripts/setup-firestore-collections.ts",
     "start": "next start"
   },

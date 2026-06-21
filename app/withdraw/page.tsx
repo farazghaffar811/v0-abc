@@ -171,9 +171,9 @@ export default function WithdrawPage() {
         throw new Error("Insufficient balance")
       }
 
-      const MIN_WITHDRAWAL_AMOUNT = 100 // INR
+      const MIN_WITHDRAWAL_AMOUNT = 100 // BDT
       if (amount < MIN_WITHDRAWAL_AMOUNT) {
-        throw new Error(`Minimum withdrawal amount is ₹${MIN_WITHDRAWAL_AMOUNT}`)
+        throw new Error(`Minimum withdrawal amount is ৳${MIN_WITHDRAWAL_AMOUNT}`)
       }
 
       if (!user.email) {
