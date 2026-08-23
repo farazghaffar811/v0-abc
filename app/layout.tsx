@@ -7,7 +7,7 @@ import ClientLayout from "./ClientLayout"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Supercoin - Digital Trading Platform",
+  title: "Coinbase - Digital Trading Platform",
   description:
     "A comprehensive digital trading platform for cryptocurrency and financial markets",
   icons: {

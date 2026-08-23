@@ -36,7 +36,7 @@ interface BankWallet {
 
 export default function WithdrawPage() {
   const router = useRouter()
-  const { user, userProfile } = useAuth()
+  const { user, userProfile, currency } = useAuth()
   const [withdrawAmount, setWithdrawAmount] = useState("")
   const [bankWallets, setBankWallets] = useState<BankWallet[]>([])
   const [selectedWallet, setSelectedWallet] = useState<BankWallet | null>(null)
@@ -253,13 +253,13 @@ export default function WithdrawPage() {
         <div>
           <h2 className="text-base font-medium mb-2">Current available balance</h2>
           <div className="bg-white p-4 rounded-lg border">
-            <span className="text-xl">{formatCurrency(userProfile?.realBalance || 0)}</span>
+            <span className="text-xl">{formatCurrency(userProfile?.realBalance || 0, currency)}</span>
           </div>
         </div>
 
         <div>
           <div className="flex justify-between items-center mb-2">
-            <h2 className="text-base font-medium">Enter Withdraw Amount</h2>
+            <h2 className="text-base font-medium">Enter Withdraw Amount ({currency})</h2>
             <Button
               type="button"
               size="sm"
@@ -281,7 +281,7 @@ export default function WithdrawPage() {
 
         <div>
           <div className="flex justify-between items-center mb-2">
-            <h2 className="text-base font-medium">Select bank wallet</h2>
+            <h2 className="text-base font-medium">Select bank or digital wallet</h2>
             <Button
               type="button"
               size="sm"

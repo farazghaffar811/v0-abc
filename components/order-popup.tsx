@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/contexts/auth-context"
+import { formatCurrency } from "@/lib/currency"
 import { doc, addDoc, collection, serverTimestamp, runTransaction, onSnapshot } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { UserProfile } from "@/lib/types"
@@ -32,7 +33,7 @@ const periods = [
 export function OrderPopup({ isOpen, onClose, orderType, symbol, currentPrice }: OrderPopupProps) {
   const [selectedPeriod, setSelectedPeriod] = useState(periods[0])
   const [amount, setAmount] = useState("")
-  const { user } = useAuth()
+  const { user, currency } = useAuth()
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const router = useRouter()
   const [isProcessing, setIsProcessing] = useState(false)
@@ -315,8 +316,8 @@ export function OrderPopup({ isOpen, onClose, orderType, symbol, currentPrice }:
                   <table className="w-full text-xs">
                     <tbody>
                       <tr className="border-b border-gray-200">
-                        <td className="py-0.5 sm:py-1 font-medium text-xs">Currency:</td>
-                        <td className="py-0.5 sm:py-1 text-xs">{symbol}</td>
+<td className="py-0.5 sm:py-1 font-medium text-xs">Currency:</td>
+  <td className="py-0.5 sm:py-1 text-xs">{currency}</td>
                         <td className="py-0.5 sm:py-1 font-medium text-xs">Price:</td>
                         <td className="py-0.5 sm:py-1 text-xs">${currentPrice?.toFixed(2) || "0.00"}</td>
                       </tr>

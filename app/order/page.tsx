@@ -32,7 +32,7 @@ export default function OrderPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const { user } = useAuth()
+  const { user, currency } = useAuth()
 
   useEffect(() => {
     if (!user) {
