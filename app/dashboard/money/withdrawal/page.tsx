@@ -39,6 +39,8 @@ interface WithdrawalRequest {
   userId: string
   userEmail: string
   amount: number
+  currency?: "INR" | "USD"
+  walletType?: "bank" | "digital"
   status: "pending" | "approved" | "rejected" | "completed"
   createdAt: any
   updatedAt?: any
@@ -82,6 +84,8 @@ export default function WithdrawalPage() {
                   userId: x.userId || "",
                   userEmail: x.userEmail || x.email || "",
                   amount: Number(x.amount || 0),
+                  currency: x.currency === "USD" ? "USD" : "INR",
+                  walletType: x.walletType === "digital" ? "digital" : "bank",
                   status: (x.status || "pending") as WithdrawalRequest["status"],
                   createdAt: x.createdAt,
                   updatedAt: x.updatedAt,
@@ -261,11 +265,14 @@ export default function WithdrawalPage() {
     setBankDetailsOpen(true)
   }
 
-  const formatCurrency = (amount: number) => {
-    return `₹${Number(amount || 0).toLocaleString("en-IN", {
+  const formatCurrency = (amount: number, currency: "INR" | "USD" = "INR") => {
+    const locale = currency === "USD" ? "en-US" : "en-IN"
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    })}`
+    }).format(Number(amount || 0))
   }
 
   const formatDate = (timestamp: any) => {

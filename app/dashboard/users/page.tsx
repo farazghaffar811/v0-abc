@@ -9,11 +9,14 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { toast } from "@/components/ui/use-toast"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { formatCurrency, convertToINR, type Currency } from "@/lib/currency"
 
 interface UserData {
   uid: string
   email: string
   balance: number
+  realBalance?: number
+  currency?: Currency
 }
 
 export default function UsersPage() {
@@ -23,6 +26,7 @@ export default function UsersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [amount, setAmount] = useState("")
   const [isAdding, setIsAdding] = useState(true)
+  const [amountCurrency, setAmountCurrency] = useState<Currency>("INR")
   const { isAdmin } = useAuth()
 
   useEffect(() => {
@@ -60,7 +64,8 @@ export default function UsersPage() {
 
         const userData = userDoc.data()
         const currentBalance = userData.balance || 0
-        const newBalance = isAdding ? currentBalance + numAmount : currentBalance - numAmount
+        const amountInINR = convertToINR(numAmount, amountCurrency)
+    const newBalance = isAdding ? currentBalance + amountInINR : currentBalance - amountInINR
 
         if (newBalance < 0) {
           throw new Error("Insufficient balance")
@@ -102,7 +107,12 @@ export default function UsersPage() {
           {users.map((user) => (
             <TableRow key={user.uid}>
               <TableCell>{user.email}</TableCell>
-              <TableCell>৳{user.balance?.toFixed(2) || "0.00"}</TableCell>
+              <TableCell>
+                <div className="flex flex-col gap-1">
+                  <span>{formatCurrency(user.realBalance ?? user.balance ?? 0, user.currency ?? "INR")}</span>
+                  <span className="text-xs text-muted-foreground">{user.currency ?? "INR"}</span>
+                </div>
+              </TableCell>
               <TableCell>
                 <Button
                   onClick={() => {
@@ -136,12 +146,27 @@ export default function UsersPage() {
             <DialogTitle>{isAdding ? "Add Balance" : "Deduct Balance"}</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <Input
-              type="number"
-              placeholder="Enter amount"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                min="0"
+                placeholder="Enter amount"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+              <select
+                aria-label="Recharge currency"
+                value={amountCurrency}
+                onChange={(e) => setAmountCurrency(e.target.value as Currency)}
+                className="rounded-md border bg-background px-3 text-sm"
+              >
+                <option value="INR">INR</option>
+                <option value="USD">USD</option>
+              </select>
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Stored balance remains canonical INR and converts USD at the current rate.
+            </p>
           </div>
           <DialogFooter>
             <Button onClick={() => setIsDialogOpen(false)} variant="outline">

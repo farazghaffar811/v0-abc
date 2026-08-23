@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
 import { format } from "date-fns"
 import { ArrowUp, ArrowDown, Clock } from "lucide-react"
+import { formatCurrency } from "@/lib/currency"
 
 interface Order {
   id: string
@@ -146,7 +147,7 @@ export default function OrderPage() {
             // Show toast notification when order completes
             toast({
               title: "Order Completed",
-              description: `Your order has been completed with a profit of ₹${profitAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}!`,
+              description: `Your order has been completed with a profit of ${formatCurrency(profitAmount, currency)}!`,
             })
           })
         } catch (error) {
@@ -269,6 +270,7 @@ export default function OrderPage() {
 }
 
 function OrderCard({ order }: { order: Order }) {
+  const { currency } = useAuth()
   const isCompleted = order.status === "completed"
   // Safely calculate profit with fallbacks for undefined values
   const profit = isCompleted ? order.profitAmount || 0 : ((order.amount || 0) * (order.period?.percentage || 0)) / 100
@@ -302,22 +304,21 @@ function OrderCard({ order }: { order: Order }) {
           <div className="flex flex-col">
             <span className="text-gray-500">Amount</span>
             <span className="font-medium">
-              ₹{(order.amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatCurrency(order.amount || 0, currency)}
             </span>
           </div>
           <div className="flex flex-col">
             <span className="text-gray-500">Profit</span>
             <span className={`font-medium ${isCompleted ? "text-green-600" : "text-gray-600"}`}>
               {isCompleted
-                ? `+₹${profit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                ? `+${formatCurrency(profit, currency)}`
                 : `+₹${profit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${order.period?.percentage || 0}%)`}
             </span>
           </div>
           <div className="flex flex-col">
             <span className="text-gray-500">Total</span>
             <span className="font-medium">
-              ₹
-              {(order.totalAmount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatCurrency(order.totalAmount || 0, currency)}
             </span>
           </div>
           <div className="flex flex-col">

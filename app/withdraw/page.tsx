@@ -28,10 +28,13 @@ import { formatCurrency } from "@/lib/utils"
 
 interface BankWallet {
   id: string
-  bankName: string
-  accountName?: string // Make this field optional
-  accountNumber: string
-  ifscCode: string
+  walletType?: "bank" | "digital"
+  bankName?: string
+  accountName?: string
+  accountNumber?: string
+  ifscCode?: string
+  network?: string
+  walletAddress?: string
 }
 
 export default function WithdrawPage() {
@@ -114,13 +117,21 @@ export default function WithdrawPage() {
   const fetchBankWallets = async () => {
     if (!user) return
     try {
-      const walletsRef = collection(db, "users", user.uid, "bankWallets")
-      const walletsSnapshot = await getDocs(walletsRef)
-      const wallets = walletsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as BankWallet[]
-      setBankWallets(wallets)
+    const [bankSnapshot, digitalSnapshot] = await Promise.all([
+      getDocs(collection(db, "users", user.uid, "bankWallets")),
+      getDocs(collection(db, "users", user.uid, "digitalWallets")),
+    ])
+    const bankWallets = bankSnapshot.docs.map((walletDoc) => ({
+      id: walletDoc.id,
+      walletType: "bank" as const,
+      ...walletDoc.data(),
+    })) as BankWallet[]
+    const digitalWallets = digitalSnapshot.docs.map((walletDoc) => ({
+      id: walletDoc.id,
+      walletType: "digital" as const,
+      ...walletDoc.data(),
+    })) as BankWallet[]
+    setBankWallets([...bankWallets, ...digitalWallets])
     } catch (error) {
       console.error("Error fetching bank wallets:", error)
       toast({
@@ -202,13 +213,21 @@ export default function WithdrawPage() {
           userId: user.uid,
           userEmail: user.email,
           amount: amount,
-          bankDetails: {
-            bankName: selectedWallet.bankName,
-            accountName: accountName,
-            accountNumber: selectedWallet.accountNumber,
-            ifscCode: selectedWallet.ifscCode,
-          },
-          bankWalletId: selectedWallet.id, // Add this line to store the bank wallet ID
+      walletType: selectedWallet.walletType || "bank",
+      bankDetails:
+        selectedWallet.walletType === "digital"
+          ? {
+              network: selectedWallet.network || "TRC20",
+              walletAddress: selectedWallet.walletAddress || selectedWallet.accountNumber || "",
+              accountName,
+            }
+          : {
+              bankName: selectedWallet.bankName || "",
+              accountName,
+              accountNumber: selectedWallet.accountNumber || "",
+              ifscCode: selectedWallet.ifscCode || "",
+            },
+      bankWalletId: selectedWallet.id,
           status: "pending",
           createdAt: serverTimestamp(),
         }
@@ -300,9 +319,13 @@ export default function WithdrawPage() {
                 }`}
                 onClick={() => setSelectedWallet(wallet)}
               >
-                <p className="font-medium">{wallet.bankName}</p>
-                {wallet.accountName && <p className="text-sm text-gray-600">Account: {wallet.accountName}</p>}
-                <p className="text-sm text-gray-600">A/C: {wallet.accountNumber}</p>
+              <p className="font-medium">
+                {wallet.walletType === "digital" ? `${wallet.network || "Digital wallet"} wallet` : wallet.bankName || "Bank wallet"}
+              </p>
+              {wallet.accountName && <p className="text-sm text-gray-600">Account: {wallet.accountName}</p>}
+              <p className="text-sm text-gray-600">
+                {wallet.walletType === "digital" ? `Address: ${wallet.walletAddress || wallet.accountNumber || "Not set"}` : `A/C: ${wallet.accountNumber || "Not set"}`}
+              </p>
               </div>
             ))}
           </div>
