@@ -12,6 +12,8 @@ import { db } from "@/lib/firebase"
 
 interface BankWallet {
   id: string
+  bindingType?: string
+  currency?: string
   holderName: string
   bankName: string
   accountNumber: string
@@ -119,6 +121,7 @@ export default function BankWalletPage() {
                       <h3 className="font-medium">{wallet.holderName}</h3>
                       <span className="text-sm text-gray-500">{wallet.bankName}</span>
                     </div>
+                    <p className="text-sm text-gray-500">{wallet.bindingType || "Bank account"} · {wallet.currency || "INR"}</p>
                     <p className="text-sm text-gray-600">A/C: {wallet.accountNumber}</p>
                     <p className="text-sm text-gray-500">IFSC: {wallet.ifscCode}</p>
                   </div>

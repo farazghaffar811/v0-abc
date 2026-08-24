@@ -24,5 +24,5 @@ export function generateReferralCode(): string {
 }
 
 export function formatIndianCurrency(amount: number): string {
-  return "৳" + amount.toLocaleString("en-BD", { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+  return "₹" + amount.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })
 }
