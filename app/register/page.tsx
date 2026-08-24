@@ -82,9 +82,16 @@ export default function RegisterPage() {
     <div className="min-h-screen flex flex-col p-6">
       <div className="flex-1 flex flex-col items-center justify-center">
         <div className="w-full max-w-sm space-y-8">
-          <div className="text-center">
-            <div className="text-2xl font-semibold tracking-tight text-foreground">Coinbase</div>
-          </div>
+           <div className="text-center">
+  <div className="text-3xl font-semibold tracking-tight font-extrabold">
+    <span className="bg-gradient-to-r from-purple-500 to-violet-700 bg-clip-text text-transparent">
+      Coin
+    </span>
+    <span className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+      Base
+    </span>
+  </div>
+</div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {errorMessage && (
