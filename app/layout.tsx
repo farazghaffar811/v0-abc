@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: "https://res.cloudinary.com/dwnt025iw/image/upload/v1787568593/coinbase_urk07t.jpg",
+        url: "https://res.cloudinary.com/dwnt025iw/image/upload/v1787569788/coinbase1_mbvm8d.jpg",
         type: "image/jpeg",
         sizes: "32x32",
       },
