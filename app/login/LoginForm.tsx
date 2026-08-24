@@ -45,7 +45,7 @@ export default function LoginForm() {
     <div className="flex flex-col items-center pt-8">
       <div className="w-full max-w-sm space-y-8">
        <div className="text-center">
-  <div className="text-2xl font-semibold tracking-tight">
+  <div className="text-3xl font-semibold tracking-tight font-bold">
     <span className="bg-gradient-to-r from-purple-500 to-violet-700 bg-clip-text text-transparent">
       Coin
     </span>
