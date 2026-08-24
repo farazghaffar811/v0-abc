@@ -83,13 +83,7 @@ export default function RegisterPage() {
       <div className="flex-1 flex flex-col items-center justify-center">
         <div className="w-full max-w-sm space-y-8">
           <div className="text-center">
-            <Image
-              src="/images/design-mode/logo_super_scjghk%281%29%281%29.png"
-              alt="SuperCoin"
-              width={200}
-              height={50}
-              className="mx-auto"
-            />
+            <div className="text-2xl font-semibold tracking-tight text-foreground">Coinbase</div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -236,7 +230,7 @@ export default function RegisterPage() {
       </div>
 
       <footer className="text-center text-sm text-gray-500 space-y-1">
-        <div>SuperCoin Technology</div>
+        <div>Coinbase Technology</div>
         <div>All Rights Reserved</div>
         <div>©2015-2025</div>
       </footer>

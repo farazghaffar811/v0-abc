@@ -15,9 +15,9 @@ export default function AboutPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <h3 className="font-semibold text-lg mb-2">SuperCoin</h3>
+            <h3 className="font-semibold text-lg mb-2">Coinbase</h3>
             <p className="text-gray-600 leading-relaxed">
-              SuperCoin is a leading cryptocurrency trading platform that
+              Coinbase is a leading cryptocurrency trading platform that
               provides secure, reliable, and user-friendly services for digital
               asset trading. We are committed to delivering the best trading
               experience with advanced technology and comprehensive security

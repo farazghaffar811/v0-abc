@@ -312,7 +312,7 @@ function OrderCard({ order }: { order: Order }) {
             <span className={`font-medium ${isCompleted ? "text-green-600" : "text-gray-600"}`}>
               {isCompleted
                 ? `+${formatCurrency(profit, currency)}`
-                : `+₹${profit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${order.period?.percentage || 0}%)`}
+                : `+${formatCurrency(profit, currency)} (${order.period?.percentage || 0}%)`}
             </span>
           </div>
           <div className="flex flex-col">
