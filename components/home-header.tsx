@@ -60,7 +60,7 @@ export function HomeHeader() {
             <span className="text-white font-bold text-sm">SC</span>
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-semibold text-gray-900">Supercoin</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Coinbase</h1>
             <div className="flex items-center gap-3">
               <p className="text-sm text-gray-600 truncate">
                 Available: <span className="font-semibold text-green-600">{displayBalance}</span>

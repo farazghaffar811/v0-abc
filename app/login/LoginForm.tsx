@@ -45,15 +45,7 @@ export default function LoginForm() {
     <div className="flex flex-col items-center pt-8">
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center">
-          <div className="relative mx-auto overflow-hidden" style={{ width: 200, height: 35 }}>
-            <Image
-              src="/images/design-mode/logo_super_scjghk%281%29%281%29.png"
-              alt="SuperCoin"
-              width={200}
-              height={50}
-              className="absolute top-1/2 transform -translate-y-1/2"
-            />
-          </div>
+            <div className="text-2xl font-semibold tracking-tight text-foreground">Coinbase</div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

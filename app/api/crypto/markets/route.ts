@@ -7,7 +7,7 @@ export async function GET(request: Request) {
       {
         headers: {
           "Accept": "application/json",
-          "User-Agent": "SuperCoin/1.0",
+          "User-Agent": "Coinbase/1.0",
         },
       }
     )

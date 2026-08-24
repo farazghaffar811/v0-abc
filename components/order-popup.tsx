@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/contexts/auth-context"
-import { formatCurrency } from "@/lib/currency"
+import { convertToINR, fetchExchangeRate, formatCurrency } from "@/lib/currency"
 import { doc, addDoc, collection, serverTimestamp, runTransaction, onSnapshot } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { UserProfile } from "@/lib/types"
@@ -39,6 +39,11 @@ export function OrderPopup({ isOpen, onClose, orderType, symbol, currentPrice }:
   const [isProcessing, setIsProcessing] = useState(false)
   const [timeLeft, setTimeLeft] = useState(0)
   const [orderId, setOrderId] = useState<string | null>(null)
+  const [inrPerUsd, setInrPerUsd] = useState(83.5)
+
+  useEffect(() => {
+    fetchExchangeRate().then(setInrPerUsd)
+  }, [])
 
   useEffect(() => {
     if (user) {
@@ -63,11 +68,15 @@ export function OrderPopup({ isOpen, onClose, orderType, symbol, currentPrice }:
     }
   }, [isOpen])
 
+  const orderAmountINR = useMemo(() => {
+    const enteredAmount = Number.parseFloat(amount) || 0
+    return convertToINR(enteredAmount, currency, inrPerUsd)
+  }, [amount, currency, inrPerUsd])
+
   const totalAmount = useMemo(() => {
-    const baseAmount = Number.parseFloat(amount) || 0
-    const profitAmount = (baseAmount * selectedPeriod.percentage) / 100
-    return baseAmount + profitAmount
-  }, [amount, selectedPeriod])
+    const profitAmount = (orderAmountINR * selectedPeriod.percentage) / 100
+    return orderAmountINR + profitAmount
+  }, [orderAmountINR, selectedPeriod])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -76,8 +85,9 @@ export function OrderPopup({ isOpen, onClose, orderType, symbol, currentPrice }:
       return
     }
 
-    const orderAmount = Number.parseFloat(amount)
-    if (isNaN(orderAmount) || orderAmount <= 0) {
+    const enteredAmount = Number.parseFloat(amount)
+    const orderAmount = convertToINR(enteredAmount, currency, inrPerUsd)
+    if (isNaN(enteredAmount) || enteredAmount <= 0) {
       toast({ title: "Error", description: "Please enter a valid order amount.", variant: "destructive" })
       return
     }
@@ -257,11 +267,7 @@ export function OrderPopup({ isOpen, onClose, orderType, symbol, currentPrice }:
                 <div className="flex justify-between items-center mb-2 pb-1 border-b">
                   <span className="text-xs font-medium">Available Balance:</span>
                   <span className="text-primary font-bold text-xs">
-                    ₹
-                    {userProfile?.realBalance.toLocaleString("en-IN", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    }) || "0.00"}
+                    {formatCurrency(userProfile?.realBalance || 0, currency, inrPerUsd)}
                   </span>
                 </div>
 
@@ -275,7 +281,7 @@ export function OrderPopup({ isOpen, onClose, orderType, symbol, currentPrice }:
                     type="number"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    placeholder="Enter amount (min: 1000)"
+                    placeholder={`Enter amount in ${currency} (min: ${formatCurrency(1000, currency, inrPerUsd)})`}
                     className="py-1 text-xs h-7"
                     disabled={isProcessing}
                   />
@@ -324,15 +330,11 @@ export function OrderPopup({ isOpen, onClose, orderType, symbol, currentPrice }:
                       <tr className="border-b border-gray-200">
                         <td className="py-0.5 sm:py-1 font-medium text-xs">Profit ({selectedPeriod.percentage}%):</td>
                         <td className="py-0.5 sm:py-1 text-green-500 font-medium text-xs">
-                          +{(((Number.parseFloat(amount) || 0) * selectedPeriod.percentage) / 100).toFixed(2)}
+                          +{formatCurrency((orderAmountINR * selectedPeriod.percentage) / 100, currency, inrPerUsd)}
                         </td>
                         <td className="py-0.5 sm:py-1 font-medium text-xs">Total:</td>
                         <td className="py-0.5 sm:py-1 font-bold text-primary text-xs">
-                          ₹
-                          {totalAmount.toLocaleString("en-IN", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
+                          {formatCurrency(totalAmount, currency, inrPerUsd)}
                         </td>
                       </tr>
                       <tr>
