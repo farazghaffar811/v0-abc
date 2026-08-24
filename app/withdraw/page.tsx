@@ -25,18 +25,22 @@ import { toast } from "@/components/ui/use-toast"
 import { Label } from "@/components/ui/label"
 import { Loader2 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
+import { convertToINR, fetchExchangeRate } from "@/lib/currency"
 
 interface BankWallet {
   id: string
-  bankName: string
-  accountName?: string // Make this field optional
-  accountNumber: string
-  ifscCode: string
+  walletType?: "bank" | "digital"
+  bankName?: string
+  accountName?: string
+  accountNumber?: string
+  ifscCode?: string
+  network?: string
+  walletAddress?: string
 }
 
 export default function WithdrawPage() {
   const router = useRouter()
-  const { user, userProfile } = useAuth()
+  const { user, userProfile, currency } = useAuth()
   const [withdrawAmount, setWithdrawAmount] = useState("")
   const [bankWallets, setBankWallets] = useState<BankWallet[]>([])
   const [selectedWallet, setSelectedWallet] = useState<BankWallet | null>(null)
@@ -44,6 +48,11 @@ export default function WithdrawPage() {
   const [withdrawalStatus, setWithdrawalStatus] = useState<string | null>(null)
   const [declineComment, setDeclineComment] = useState<string | null>(null)
   const [accountNameInput, setAccountNameInput] = useState("")
+  const [exchangeRate, setExchangeRate] = useState(83.5)
+
+  useEffect(() => {
+    fetchExchangeRate().then(setExchangeRate)
+  }, [])
 
   useEffect(() => {
     if (!user) {
@@ -114,13 +123,21 @@ export default function WithdrawPage() {
   const fetchBankWallets = async () => {
     if (!user) return
     try {
-      const walletsRef = collection(db, "users", user.uid, "bankWallets")
-      const walletsSnapshot = await getDocs(walletsRef)
-      const wallets = walletsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as BankWallet[]
-      setBankWallets(wallets)
+    const [bankSnapshot, digitalSnapshot] = await Promise.all([
+      getDocs(collection(db, "users", user.uid, "bankWallets")),
+      getDocs(collection(db, "users", user.uid, "digitalWallets")),
+    ])
+    const bankWallets = bankSnapshot.docs.map((walletDoc) => ({
+      id: walletDoc.id,
+      walletType: "bank" as const,
+      ...walletDoc.data(),
+    })) as BankWallet[]
+    const digitalWallets = digitalSnapshot.docs.map((walletDoc) => ({
+      id: walletDoc.id,
+      walletType: "digital" as const,
+      ...walletDoc.data(),
+    })) as BankWallet[]
+    setBankWallets([...bankWallets, ...digitalWallets])
     } catch (error) {
       console.error("Error fetching bank wallets:", error)
       toast({
@@ -133,7 +150,8 @@ export default function WithdrawPage() {
 
   const handleSetMaxAmount = () => {
     if (userProfile?.realBalance) {
-      setWithdrawAmount(userProfile.realBalance.toString())
+      const displayAmount = currency === "USD" ? userProfile.realBalance / exchangeRate : userProfile.realBalance
+      setWithdrawAmount(displayAmount.toFixed(2))
     }
   }
 
@@ -162,18 +180,19 @@ export default function WithdrawPage() {
 
     setIsLoading(true)
     try {
-      const amount = Number(withdrawAmount)
-      console.log("Withdrawal amount:", amount, "User balance:", userProfile.realBalance)
-      if (isNaN(amount) || amount <= 0) {
+      const displayAmount = Number(withdrawAmount)
+      const amount = convertToINR(displayAmount, currency, exchangeRate)
+      console.log("Withdrawal amount:", displayAmount, currency, "INR:", amount, "User balance:", userProfile.realBalance)
+      if (!Number.isFinite(displayAmount) || displayAmount <= 0) {
         throw new Error("Invalid withdrawal amount")
       }
       if (amount > userProfile.realBalance) {
         throw new Error("Insufficient balance")
       }
 
-      const MIN_WITHDRAWAL_AMOUNT = 100 // BDT
+      const MIN_WITHDRAWAL_AMOUNT = 100
       if (amount < MIN_WITHDRAWAL_AMOUNT) {
-        throw new Error(`Minimum withdrawal amount is ৳${MIN_WITHDRAWAL_AMOUNT}`)
+        throw new Error(`Minimum withdrawal amount is ${formatCurrency(MIN_WITHDRAWAL_AMOUNT, currency, exchangeRate)}`)
       }
 
       if (!user.email) {
@@ -201,14 +220,24 @@ export default function WithdrawPage() {
         const withdrawalData = {
           userId: user.uid,
           userEmail: user.email,
-          amount: amount,
-          bankDetails: {
-            bankName: selectedWallet.bankName,
-            accountName: accountName,
-            accountNumber: selectedWallet.accountNumber,
-            ifscCode: selectedWallet.ifscCode,
-          },
-          bankWalletId: selectedWallet.id, // Add this line to store the bank wallet ID
+          amount,
+          displayAmount,
+          currency,
+      walletType: selectedWallet.walletType || "bank",
+      bankDetails:
+        selectedWallet.walletType === "digital"
+          ? {
+              network: selectedWallet.network || "TRC20",
+              walletAddress: selectedWallet.walletAddress || selectedWallet.accountNumber || "",
+              accountName,
+            }
+          : {
+              bankName: selectedWallet.bankName || "",
+              accountName,
+              accountNumber: selectedWallet.accountNumber || "",
+              ifscCode: selectedWallet.ifscCode || "",
+            },
+      bankWalletId: selectedWallet.id,
           status: "pending",
           createdAt: serverTimestamp(),
         }
@@ -253,13 +282,13 @@ export default function WithdrawPage() {
         <div>
           <h2 className="text-base font-medium mb-2">Current available balance</h2>
           <div className="bg-white p-4 rounded-lg border">
-            <span className="text-xl">{formatCurrency(userProfile?.realBalance || 0)}</span>
+            <span className="text-xl">{formatCurrency(userProfile?.realBalance || 0, currency)}</span>
           </div>
         </div>
 
         <div>
           <div className="flex justify-between items-center mb-2">
-            <h2 className="text-base font-medium">Enter Withdraw Amount</h2>
+            <h2 className="text-base font-medium">Enter Withdraw Amount ({currency})</h2>
             <Button
               type="button"
               size="sm"
@@ -281,7 +310,7 @@ export default function WithdrawPage() {
 
         <div>
           <div className="flex justify-between items-center mb-2">
-            <h2 className="text-base font-medium">Select bank wallet</h2>
+            <h2 className="text-base font-medium">Select bank or digital wallet</h2>
             <Button
               type="button"
               size="sm"
@@ -300,9 +329,13 @@ export default function WithdrawPage() {
                 }`}
                 onClick={() => setSelectedWallet(wallet)}
               >
-                <p className="font-medium">{wallet.bankName}</p>
-                {wallet.accountName && <p className="text-sm text-gray-600">Account: {wallet.accountName}</p>}
-                <p className="text-sm text-gray-600">A/C: {wallet.accountNumber}</p>
+              <p className="font-medium">
+                {wallet.walletType === "digital" ? `${wallet.network || "Digital wallet"} wallet` : wallet.bankName || "Bank wallet"}
+              </p>
+              {wallet.accountName && <p className="text-sm text-gray-600">Account: {wallet.accountName}</p>}
+              <p className="text-sm text-gray-600">
+                {wallet.walletType === "digital" ? `Address: ${wallet.walletAddress || wallet.accountNumber || "Not set"}` : `A/C: ${wallet.accountNumber || "Not set"}`}
+              </p>
               </div>
             ))}
           </div>

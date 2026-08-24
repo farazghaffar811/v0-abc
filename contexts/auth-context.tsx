@@ -23,6 +23,8 @@ import {
 import { auth, db } from "@/lib/firebase"
 import { generateReferralCode } from "@/lib/utils"
 import type { UserProfile } from "@/lib/types"
+import type { Currency } from "@/lib/currency"
+import { DEFAULT_CURRENCY } from "@/lib/currency"
 
 interface AuthContextType {
   user: User | null
@@ -33,6 +35,8 @@ interface AuthContextType {
   isLoading: boolean
   error: string | null
   isAdmin: boolean
+  currency: Currency
+  setCurrency: (currency: Currency) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -84,6 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [currency, setCurrencyState] = useState<Currency>(DEFAULT_CURRENCY)
   const router = useRouter()
 
   useEffect(() => {
@@ -108,7 +113,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
 
                 console.log("User profile loaded:", userData)
-                setUserProfile(userData)
+                const selectedCurrency = userData.currency || DEFAULT_CURRENCY
+                setCurrencyState(selectedCurrency)
+                setUserProfile({ ...userData, currency: selectedCurrency })
                 const isAdminUser = userData.email === ADMIN_EMAIL
                 setIsAdmin(isAdminUser)
                 document.cookie = `isAdmin=${isAdminUser}; path=/; max-age=86400; secure; samesite=strict`
@@ -120,6 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   referralCode: generateReferralCode(),
                   balance: 0,
                   realBalance: 0,
+                  currency: DEFAULT_CURRENCY,
                   frozenAmount: 0,
                   creditScore: INITIAL_CREDIT_SCORE,
                   reputation: INITIAL_REPUTATION,
@@ -161,6 +169,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => unsubscribe()
   }, [])
+
+  const setCurrency = async (nextCurrency: Currency) => {
+    setCurrencyState(nextCurrency)
+    setUserProfile((current) => current ? { ...current, currency: nextCurrency } : current)
+    if (user?.uid) await setDoc(doc(db, "users", user.uid), { currency: nextCurrency, updatedAt: serverTimestamp() }, { merge: true })
+  }
 
   const login = async (email: string, password: string) => {
     try {
@@ -316,8 +330,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         isLoading,
         error,
-        isAdmin,
-      }}
+  isAdmin,
+  currency,
+  setCurrency,
+  }}
     >
       {children}
     </AuthContext.Provider>

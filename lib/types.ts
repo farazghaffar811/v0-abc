@@ -1,3 +1,5 @@
+export type Currency = "INR" | "USD"
+
 export interface UserProfile {
   uid: string
   email: string
@@ -6,6 +8,10 @@ export interface UserProfile {
   address?: string
   balance: number
   realBalance: number
+  currency?: Currency
+  avatar?: string
+  phone?: string
+  direction?: string
   frozenAmount: number
   creditScore: number
   status: "active" | "inactive" | "suspended" | "frozen"
@@ -48,8 +54,10 @@ export interface Withdrawal {
   id: string
   userId: string
   amount: number
+  currency?: Currency
   method: "bank" | "crypto"
   address?: string
+  network?: string
   bankDetails?: {
     accountNumber: string
     routingNumber: string

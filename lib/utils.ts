@@ -5,9 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatCurrency(amount: number): string {
-  return "৳" + amount.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
+export { formatCurrency } from "@/lib/currency"
 
 export function capitalizeWords(str: string): string {
   return str

@@ -4,7 +4,8 @@ import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { doc, onSnapshot } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-import { formatCurrency } from "@/lib/utils"
+import { formatCurrency } from "@/lib/currency"
+import type { Currency } from "@/lib/currency"
 import { Bell, User } from "lucide-react"
 import Link from "next/link"
 
@@ -18,6 +19,7 @@ interface UserBalance {
   ban?: string
   withdrawalStatus?: string
   withdrawalProhibited?: boolean
+  currency?: Currency
 }
 
 export function HomeHeader() {
@@ -47,8 +49,8 @@ export function HomeHeader() {
     return () => unsubscribe()
   }, [user?.uid])
 
-  const displayBalance = isLoading ? "Loading..." : formatCurrency(userBalance.realBalance || userBalance.balance || 0)
-  const displayFrozen = isLoading ? "0" : formatCurrency(userBalance.frozenAmount || 0)
+  const displayBalance = isLoading ? "Loading..." : formatCurrency(userBalance.realBalance || userBalance.balance || 0, userBalance.currency || "INR")
+  const displayFrozen = isLoading ? "0" : formatCurrency(userBalance.frozenAmount || 0, userBalance.currency || "INR")
 
   return (
     <header className="bg-white shadow-sm border-b">

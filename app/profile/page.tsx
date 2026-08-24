@@ -17,9 +17,10 @@ import { toast } from "@/components/ui/use-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { formatCurrency, capitalizeWords } from "@/lib/utils"
+import type { Currency } from "@/lib/currency"
 
 export default function ProfilePage() {
-  const { user, isAdmin, logout } = useAuth()
+  const { user, isAdmin, logout, currency, setCurrency } = useAuth()
   const [depositAmount, setDepositAmount] = useState("")
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -158,16 +159,16 @@ export default function ProfilePage() {
           <CardContent className="p-4">
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Available Balance:</span>
+                <div className="flex items-center gap-3"><span className="text-gray-600">Available Balance:</span><select aria-label="Change currency" value={currency} onChange={(event) => setCurrency(event.target.value as Currency)} className="rounded-md border bg-background px-2 py-1 text-sm"><option value="INR">INR</option><option value="USD">USD</option></select></div>
                 <span className="font-semibold text-lg text-green-600">
-                  {formatCurrency(userProfile.realBalance || 0)}
+                  {formatCurrency(userProfile.realBalance || 0, currency)}
                 </span>
               </div>
 
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Frozen Amount:</span>
                 <span className="font-semibold text-lg text-red-600">
-                  {formatCurrency(userProfile.frozenAmount || 0)}
+                  {formatCurrency(userProfile.frozenAmount || 0, currency)}
                 </span>
               </div>
 
