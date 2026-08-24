@@ -132,7 +132,7 @@ export default function AssetPage() {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="font-medium">
-                    Amount: ৳{withdrawal.amount.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    Amount: ₹{withdrawal.amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                   <p className="text-sm text-gray-500">{format(withdrawal.createdAt, "MMM d, yyyy HH:mm")}</p>
                   {withdrawal.bankDetails && (

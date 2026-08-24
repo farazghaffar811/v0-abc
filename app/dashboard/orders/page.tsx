@@ -223,9 +223,9 @@ export default function AdminOrdersPage() {
                   {order.orderType === "up" ? "UP" : "DOWN"}
                 </Badge>
               </TableCell>
-              <TableCell>৳{order.amount?.toFixed(2) || "0.00"}</TableCell>
-              <TableCell>৳{order.profitAmount?.toFixed(2) || "0.00"}</TableCell>
-              <TableCell>৳{order.totalAmount?.toFixed(2) || "0.00"}</TableCell>
+              <TableCell>₹{order.amount?.toFixed(2) || "0.00"}</TableCell>
+              <TableCell>₹{order.profitAmount?.toFixed(2) || "0.00"}</TableCell>
+              <TableCell>₹{order.totalAmount?.toFixed(2) || "0.00"}</TableCell>
               <TableCell>
                 {order.period && typeof order.period === "object" && order.period.seconds && order.period.percentage
                   ? `${order.period.seconds}s (${order.period.percentage}%)`
