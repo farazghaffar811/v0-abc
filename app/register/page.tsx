@@ -82,13 +82,13 @@ export default function RegisterPage() {
     <div className="min-h-screen flex flex-col p-6">
       <div className="flex-1 flex flex-col items-center justify-center">
         <div className="w-full max-w-sm space-y-8">
-           <div className="text-center">
-  <div className="text-3xl font-semibold tracking-tight font-extrabold">
-    <span className="bg-gradient-to-r from-purple-500 to-violet-700 bg-clip-text text-transparent">
+          <div className="text-center">
+  <div className="text-2xl font-semibold tracking-tight">
+    <span className="bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
       Coin
     </span>
-    <span className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-      Base
+    <span className="bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent">
+      base
     </span>
   </div>
 </div>
