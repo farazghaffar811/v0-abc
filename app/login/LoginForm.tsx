@@ -50,7 +50,7 @@ export default function LoginForm() {
       Coin
     </span>
     <span className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-      base
+      Base
     </span>
   </div>
 </div>
