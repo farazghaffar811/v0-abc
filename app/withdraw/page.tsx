@@ -25,6 +25,7 @@ import { toast } from "@/components/ui/use-toast"
 import { Label } from "@/components/ui/label"
 import { Loader2 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
+import { convertToINR, fetchExchangeRate } from "@/lib/currency"
 
 interface BankWallet {
   id: string
@@ -47,6 +48,11 @@ export default function WithdrawPage() {
   const [withdrawalStatus, setWithdrawalStatus] = useState<string | null>(null)
   const [declineComment, setDeclineComment] = useState<string | null>(null)
   const [accountNameInput, setAccountNameInput] = useState("")
+  const [exchangeRate, setExchangeRate] = useState(83.5)
+
+  useEffect(() => {
+    fetchExchangeRate().then(setExchangeRate)
+  }, [])
 
   useEffect(() => {
     if (!user) {
@@ -144,7 +150,8 @@ export default function WithdrawPage() {
 
   const handleSetMaxAmount = () => {
     if (userProfile?.realBalance) {
-      setWithdrawAmount(userProfile.realBalance.toString())
+      const displayAmount = currency === "USD" ? userProfile.realBalance / exchangeRate : userProfile.realBalance
+      setWithdrawAmount(displayAmount.toFixed(2))
     }
   }
 
@@ -173,18 +180,19 @@ export default function WithdrawPage() {
 
     setIsLoading(true)
     try {
-      const amount = Number(withdrawAmount)
-      console.log("Withdrawal amount:", amount, "User balance:", userProfile.realBalance)
-      if (isNaN(amount) || amount <= 0) {
+      const displayAmount = Number(withdrawAmount)
+      const amount = convertToINR(displayAmount, currency, exchangeRate)
+      console.log("Withdrawal amount:", displayAmount, currency, "INR:", amount, "User balance:", userProfile.realBalance)
+      if (!Number.isFinite(displayAmount) || displayAmount <= 0) {
         throw new Error("Invalid withdrawal amount")
       }
       if (amount > userProfile.realBalance) {
         throw new Error("Insufficient balance")
       }
 
-      const MIN_WITHDRAWAL_AMOUNT = 100 // BDT
+      const MIN_WITHDRAWAL_AMOUNT = 100
       if (amount < MIN_WITHDRAWAL_AMOUNT) {
-        throw new Error(`Minimum withdrawal amount is ৳${MIN_WITHDRAWAL_AMOUNT}`)
+        throw new Error(`Minimum withdrawal amount is ${formatCurrency(MIN_WITHDRAWAL_AMOUNT, currency, exchangeRate)}`)
       }
 
       if (!user.email) {
@@ -212,7 +220,9 @@ export default function WithdrawPage() {
         const withdrawalData = {
           userId: user.uid,
           userEmail: user.email,
-          amount: amount,
+          amount,
+          displayAmount,
+          currency,
       walletType: selectedWallet.walletType || "bank",
       bankDetails:
         selectedWallet.walletType === "digital"

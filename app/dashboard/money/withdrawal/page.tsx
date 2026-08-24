@@ -39,6 +39,7 @@ interface WithdrawalRequest {
   userId: string
   userEmail: string
   amount: number
+  displayAmount?: number
   currency?: "INR" | "USD"
   walletType?: "bank" | "digital"
   status: "pending" | "approved" | "rejected" | "completed"
@@ -84,6 +85,7 @@ export default function WithdrawalPage() {
                   userId: x.userId || "",
                   userEmail: x.userEmail || x.email || "",
                   amount: Number(x.amount || 0),
+                  displayAmount: Number(x.displayAmount ?? x.amount ?? 0),
                   currency: x.currency === "USD" ? "USD" : "INR",
                   walletType: x.walletType === "digital" ? "digital" : "bank",
                   status: (x.status || "pending") as WithdrawalRequest["status"],
@@ -365,7 +367,7 @@ export default function WithdrawalPage() {
                           <div className="text-sm text-gray-500">{withdrawal.userId}</div>
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium">{formatCurrency(withdrawal.amount)}</TableCell>
+                      <TableCell className="font-medium">{formatCurrency(withdrawal.displayAmount ?? withdrawal.amount, withdrawal.currency)}</TableCell>
                       <TableCell>{getStatusBadge(withdrawal.status)}</TableCell>
                       <TableCell>
                         {withdrawal.bankDetails &&
@@ -468,7 +470,7 @@ export default function WithdrawalPage() {
               </div>
               <div>
                 <span className="font-medium">Amount:</span>{" "}
-                <span className="text-gray-600">{formatCurrency(rejectTarget?.amount || 0)}</span>
+                <span className="text-gray-600">{formatCurrency(rejectTarget?.displayAmount ?? rejectTarget?.amount ?? 0, rejectTarget?.currency)}</span>
               </div>
             </div>
             <div className="space-y-2">
