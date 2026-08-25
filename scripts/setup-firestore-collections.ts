@@ -82,7 +82,7 @@ async function setupFirestoreCollections() {
 
     // Admin user
     await usersRef.doc("admin").set({
-      email: "admin@supercoin.com",
+      email: "admin@coinbase.com",
       displayName: "System Administrator",
       phoneNumber: "+1000000000",
       address: "Admin Office",

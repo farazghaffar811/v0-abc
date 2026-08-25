@@ -41,7 +41,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const ADMIN_EMAIL = "admin@supercoin.com"
+const ADMIN_EMAIL = "admin@coinbase.com"
 const REFERRAL_BONUS = 5 // USDT bonus amount
 const INITIAL_CREDIT_SCORE = 100
 const INITIAL_REPUTATION = 100

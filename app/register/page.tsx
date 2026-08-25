@@ -24,8 +24,6 @@ export default function RegisterPage() {
     email: "",
     password: "",
     passwordConfirm: "",
-    fundPassword: "",
-    fundPasswordConfirm: "",
     invitationCode: "",
   })
 
@@ -53,13 +51,7 @@ export default function RegisterPage() {
       return
     }
 
-    if (formData.fundPassword !== formData.fundPasswordConfirm) {
-      setError("Fund passwords do not match")
-      setIsSubmitting(false)
-      return
-    }
-
-    if (formData.invitationCode !== "40007") {
+    if (formData.invitationCode !== "FR52231") {
       setError("Invalid invitation code")
       setIsSubmitting(false)
       return
@@ -153,40 +145,6 @@ export default function RegisterPage() {
                 placeholder="Please Enter Login Password Again"
                 className="pl-10 pr-10"
                 value={formData.passwordConfirm}
-                onChange={handleChange}
-                required
-                minLength={6}
-                disabled={isLoadingState}
-              />
-              <div className="absolute left-3 top-1/2 -translate-y-1/2">
-                <KeyRound className="h-5 w-5 text-gray-400 font-bold" />
-              </div>
-            </div>
-
-            <div className="relative">
-              <Input
-                type={showPassword ? "text" : "password"}
-                name="fundPassword"
-                placeholder="Please Enter New Fund Password"
-                className="pl-10 pr-10"
-                value={formData.fundPassword}
-                onChange={handleChange}
-                required
-                minLength={6}
-                disabled={isLoadingState}
-              />
-              <div className="absolute left-3 top-1/2 -translate-y-1/2">
-                <KeyRound className="h-5 w-5 text-gray-400 font-bold" />
-              </div>
-            </div>
-
-            <div className="relative">
-              <Input
-                type={showPassword ? "text" : "password"}
-                name="fundPasswordConfirm"
-                placeholder="Please Enter Fund Password Again"
-                className="pl-10 pr-10"
-                value={formData.fundPasswordConfirm}
                 onChange={handleChange}
                 required
                 minLength={6}
