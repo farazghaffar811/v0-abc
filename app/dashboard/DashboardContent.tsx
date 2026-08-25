@@ -351,7 +351,7 @@ export default function DashboardContent() {
                     <span className="font-medium">{user.email}</span>
                     {user.displayName && <span className="text-sm text-gray-500">{user.displayName}</span>}
                   </div>
-                  {(user.email === "admin@supercoin.com" || user.isAdmin) && (
+                  {(user.email === "admin@coinbase.com" || user.isAdmin) && (
                     <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">Admin</span>
                   )}
                 </TableCell>
