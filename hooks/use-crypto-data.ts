@@ -30,16 +30,15 @@ export function useCryptoData() {
       }
       const data = await response.json()
 
-      // Check if BTG is included in the fetched data
-      const btgData = data.find((coin: CryptoData) => coin.symbol === "btg")
+      // Keep BitTorrent available even when the market API is unavailable.
+      const bttData = data.find((coin: CryptoData) => coin.symbol === "btt")
 
-      if (!btgData) {
-        // If BTG is not in the fetched data, add a fallback market asset
+      if (!bttData) {
         data.push({
-          id: "btg",
-          symbol: "btg",
-          name: "Bitcoin Gold",
-          current_price: 10,
+          id: "bittorrent",
+          symbol: "btt",
+          name: "BitTorrent",
+          current_price: 0.000001,
           price_change_percentage_24h: 0.0,
         })
       }
