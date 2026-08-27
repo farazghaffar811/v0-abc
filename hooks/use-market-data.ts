@@ -45,6 +45,12 @@ export function useMarketData(symbol: string) {
 
   const useMockData = useCallback(() => {
     const mockPrice = 1000 + Math.random() * 100
+    const now = Date.now()
+    const points = Array.from({ length: 100 }, (_, index) => ({
+      time: now - (99 - index) * 60_000,
+      value: mockPrice * (0.96 + index * 0.00035 + Math.sin(index / 7) * 0.008),
+    }))
+
     setMarketData({
       lastPrice: mockPrice,
       priceChange: Math.random() * 10 - 5,
@@ -57,7 +63,7 @@ export function useMarketData(symbol: string) {
       },
       transactions: 1000 + Math.floor(Math.random() * 100),
     })
-    setChartData((prev) => [...prev.slice(-99), { time: Date.now(), value: mockPrice }])
+    setChartData(points)
     setIsUsingMockData(true)
   }, [])
 
