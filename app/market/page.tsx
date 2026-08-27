@@ -19,13 +19,13 @@ export default function MarketPage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [interval, setInterval] = useState("1")
   const [showIndicators, setShowIndicators] = useState(true)
-  const { marketData, chartData } = useMarketData("BTCUSDT")
+  const { marketData, chartData } = useMarketData("BTTUSDT")
   const [isChartReady, setIsChartReady] = useState(false)
   const [orderPopupState, setOrderPopupState] = useState<{ isOpen: boolean; type: "up" | "down" | null }>({
     isOpen: false,
     type: null,
   })
-  const symbol = "BTCUSDT"
+  const symbol = "BTTUSDT"
 
   useEffect(() => {
     const script = document.createElement("script")
@@ -45,7 +45,7 @@ export default function MarketPage() {
         new window.TradingView.widget({
           width: "100%",
           height: 350,
-          symbol: "BINANCE:BTCUSDT",
+          symbol: "BINANCE:BTTUSDT",
           interval: interval,
           timezone: "Etc/UTC",
           theme: "light",
