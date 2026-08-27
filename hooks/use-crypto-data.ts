@@ -30,16 +30,16 @@ export function useCryptoData() {
       }
       const data = await response.json()
 
-      // Check if BTS is included in the fetched data
-      const btsData = data.find((coin: CryptoData) => coin.symbol === "bts")
+      // Check if BTG is included in the fetched data
+      const btgData = data.find((coin: CryptoData) => coin.symbol === "btg")
 
-      if (!btsData) {
-        // If BTS is not in the fetched data, add mock data
+      if (!btgData) {
+        // If BTG is not in the fetched data, add a fallback market asset
         data.push({
-          id: "bts",
-          symbol: "bts",
-          name: "BitShares",
-          current_price: 0.0011,
+          id: "btg",
+          symbol: "btg",
+          name: "Bitcoin Gold",
+          current_price: 10,
           price_change_percentage_24h: 0.0,
         })
       }

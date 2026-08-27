@@ -3,6 +3,7 @@ export type Currency = "INR" | "USD"
 export interface UserProfile {
   uid: string
   email: string
+  username?: string
   displayName?: string
   phoneNumber?: string
   address?: string
