@@ -21,7 +21,7 @@ export default function RegisterPage() {
   const router = useRouter()
 
   const [formData, setFormData] = useState({
-    email: "",
+    username: "",
     password: "",
     passwordConfirm: "",
     invitationCode: "",
@@ -58,7 +58,7 @@ export default function RegisterPage() {
     }
 
     try {
-      await register(formData.email, formData.password, formData.invitationCode)
+      await register(formData.username, formData.password, formData.invitationCode)
       router.push("/")
     } catch (error) {
       setError(error instanceof Error ? error.message : "Registration failed. Please try again.")
@@ -95,11 +95,11 @@ export default function RegisterPage() {
 
             <div className="relative">
               <Input
-                type="email"
-                name="email"
-                placeholder="Please Enter Your Email"
+                type="text"
+                name="username"
+                placeholder="Please Enter Your Username"
                 className="pl-10"
-                value={formData.email}
+                value={formData.username}
                 onChange={handleChange}
                 required
                 disabled={isLoadingState}

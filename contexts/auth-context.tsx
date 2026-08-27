@@ -14,6 +14,10 @@ import {
 import {
   doc,
   getDoc,
+  getDocs,
+  collection,
+  query,
+  where,
   setDoc,
   getFirestore,
   connectFirestoreEmulator,
@@ -29,8 +33,8 @@ import { DEFAULT_CURRENCY } from "@/lib/currency"
 interface AuthContextType {
   user: User | null
   userProfile: UserProfile | null
-  login: (email: string, password: string) => Promise<void>
-  register: (email: string, password: string, referralCode?: string) => Promise<void>
+  login: (username: string, password: string) => Promise<void>
+  register: (username: string, password: string, referralCode?: string) => Promise<void>
   logout: () => Promise<void>
   isLoading: boolean
   error: string | null
@@ -176,13 +180,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user?.uid) await setDoc(doc(db, "users", user.uid), { currency: nextCurrency, updatedAt: serverTimestamp() }, { merge: true })
   }
 
-  const login = async (email: string, password: string) => {
+  const login = async (username: string, password: string) => {
     try {
+      const normalizedUsername = username.trim().toLowerCase()
+      const profileQuery = query(collection(db, "users"), where("username", "==", normalizedUsername))
+      const profileSnapshot = await getDocs(profileQuery)
+      const matchedProfile = profileSnapshot.docs[0]?.data() as UserProfile | undefined
+      const authEmail = matchedProfile?.email || (normalizedUsername === ADMIN_EMAIL ? ADMIN_EMAIL : `${normalizedUsername}@users.coinbase.local`)
+
       setIsLoading(true)
       setError(null)
 
       console.log("Attempting to sign in with email and password")
-      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+      const userCredential = await signInWithEmailAndPassword(auth, authEmail, password)
       console.log("Login successful, user:", userCredential.user.uid)
 
       const isAdminUser = email === ADMIN_EMAIL
@@ -229,10 +239,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const register = async (email: string, password: string, referralCode?: string) => {
+  const register = async (username: string, password: string, referralCode?: string) => {
     try {
       setIsLoading(true)
       setError(null)
+      const normalizedUsername = username.trim().toLowerCase()
+      const existingProfile = await getDocs(query(collection(db, "users"), where("username", "==", normalizedUsername)))
+      if (!normalizedUsername || existingProfile.docs.length > 0) throw new Error("That username is already in use.")
+      const email = `${normalizedUsername}@users.coinbase.local`
       console.log("Starting user registration process")
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
       console.log("User created in Firebase Auth:", userCredential.user.uid)
@@ -242,6 +256,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userProfile: UserProfile = {
         uid,
         email,
+        username: normalizedUsername,
         referralCode: newReferralCode,
         balance: 0,
         realBalance: 0,

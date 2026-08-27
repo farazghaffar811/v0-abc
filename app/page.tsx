@@ -64,15 +64,15 @@ export default function HomePage() {
     if (!isAdmin && !cryptoLoading) {
       console.log("Fetching updated crypto data")
       const updatedData = await refetch()
-      // Add BTS to the fetched data
-      const btsData = {
-        id: "bts",
-        symbol: "bts",
-        name: "BitShares",
-        current_price: 0.0011,
-        price_change_percentage_24h: -0.5,
+      // Add BTG to the fetched data
+      const btgData = {
+        id: "btg",
+        symbol: "btg",
+        name: "Bitcoin Gold",
+        current_price: 10,
+        price_change_percentage_24h: 0,
       }
-      setCryptoData([...updatedData, btsData])
+      setCryptoData([...updatedData.filter((coin: any) => coin.symbol !== "btg"), btgData])
     }
   }, [isAdmin, cryptoLoading, refetch])
 
@@ -181,7 +181,7 @@ export default function HomePage() {
         wsteth: "https://assets.coingecko.com/coins/images/18834/thumb/wstETH.png",
         steth: "https://assets.coingecko.com/coins/images/13442/thumb/steth_logo.png",
         sui: "https://assets.coingecko.com/coins/images/26375/thumb/sui_asset.jpeg",
-        bts: "https://s2.coinmarketcap.com/static/img/coins/200x200/463.png",
+        btg: "https://assets.coingecko.com/coins/images/1043/thumb/bitcoin-gold.png",
       }
       return logoMap[symbol.toLowerCase()] || null
     }

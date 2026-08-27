@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/auth-context"
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState("")
+  const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -25,7 +25,7 @@ export default function LoginForm() {
 
     try {
       console.log("Attempting to log in...")
-      const result = await login(email, password)
+      const result = await login(username, password)
       console.log("Login result:", result)
 
       if (result.success) {
@@ -65,11 +65,11 @@ export default function LoginForm() {
 
           <div className="relative">
             <Input
-              type="email"
-              placeholder="Your Email"
+              type="text"
+              placeholder="Your Username"
               className="pl-10 w-full h-12 rounded-lg border border-gray-200"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
             />
             <div className="absolute left-3 top-1/2 -translate-y-1/2">
