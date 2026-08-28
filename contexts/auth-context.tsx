@@ -183,10 +183,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (username: string, password: string) => {
     try {
       const normalizedUsername = username.trim().toLowerCase()
-      const profileQuery = query(collection(db, "users"), where("username", "==", normalizedUsername))
-      const profileSnapshot = await getDocs(profileQuery)
-      const matchedProfile = profileSnapshot.docs[0]?.data() as UserProfile | undefined
-      const authEmail = matchedProfile?.email || (normalizedUsername === ADMIN_EMAIL ? ADMIN_EMAIL : `${normalizedUsername}@users.coinbase.local`)
+      const authEmail = normalizedUsername === ADMIN_EMAIL
+        ? ADMIN_EMAIL
+        : `${normalizedUsername}@users.coinbase.local`
 
       setIsLoading(true)
       setError(null)
@@ -195,7 +194,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userCredential = await signInWithEmailAndPassword(auth, authEmail, password)
       console.log("Login successful, user:", userCredential.user.uid)
 
-      const isAdminUser = email === ADMIN_EMAIL
+      const isAdminUser = userCredential.user.email?.toLowerCase() === ADMIN_EMAIL
       setIsAdmin(isAdminUser)
 
       // Set cookies
@@ -244,8 +243,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true)
       setError(null)
       const normalizedUsername = username.trim().toLowerCase()
-      const existingProfile = await getDocs(query(collection(db, "users"), where("username", "==", normalizedUsername)))
-      if (!normalizedUsername || existingProfile.docs.length > 0) throw new Error("That username is already in use.")
+      if (!normalizedUsername) throw new Error("Please enter a username.")
       const email = `${normalizedUsername}@users.coinbase.local`
       console.log("Starting user registration process")
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
