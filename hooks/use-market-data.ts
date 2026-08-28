@@ -106,7 +106,17 @@ export function useMarketData(symbol: string) {
           transactions: null, // CoinGecko doesn't provide this data
         })
 
-        setChartData((prev) => [...prev.slice(-99), { time: Date.now(), value: coinData.current_price }])
+        if (symbol.toUpperCase() === "BTTUSDT") {
+          const chartResponse = await fetch("/api/crypto/chart?coinId=bittorrent")
+          if (chartResponse.ok) {
+            const historicalData = await chartResponse.json()
+            if (Array.isArray(historicalData) && historicalData.length > 0) {
+              setChartData(historicalData)
+            }
+          }
+        } else {
+          setChartData((prev) => [...prev.slice(-99), { time: Date.now(), value: coinData.current_price }])
+        }
       } else {
         console.warn(`No data found for ${symbol}, using mock data`)
         useMockData()

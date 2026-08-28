@@ -72,6 +72,12 @@ export async function fetchFromCoinGecko(): Promise<CryptoData[]> {
         change: "0.00%",
         priceChangeDirection: "none",
       },
+      {
+        symbol: "BTTUSDT",
+        price: data.bittorrent?.usd ? String(data.bittorrent.usd) : "N/A",
+        change: "0.00%",
+        priceChangeDirection: "none",
+      },
     ]
 
     return cryptoData
