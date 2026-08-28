@@ -5,55 +5,55 @@ service cloud.firestore {
     // Users collection - users can only access their own data, admin can access all
     match /users/{userId} {
       allow read, write: if request.auth != null && 
-        (request.auth.uid == userId || request.auth.token.email == 'admin@supercoin.com');
+        (request.auth.uid == userId || request.auth.token.email == 'admin@coinbase.com');
       
       // User subcollections
       match /{subcollection=**} {
         allow read, write: if request.auth != null && 
-          (request.auth.uid == userId || request.auth.token.email == 'admin@supercoin.com');
+          (request.auth.uid == userId || request.auth.token.email == 'admin@coinbase.com');
       }
     }
     
     // Orders collection - users can create orders for themselves, admin can access all
     match /orders/{orderId} {
       allow read: if request.auth != null && 
-        (resource.data.userId == request.auth.uid || request.auth.token.email == 'admin@supercoin.com');
+        (resource.data.userId == request.auth.uid || request.auth.token.email == 'admin@coinbase.com');
       allow create: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow update, delete: if request.auth != null && request.auth.token.email == 'admin@supercoin.com';
+      allow update, delete: if request.auth != null && request.auth.token.email == 'admin@coinbase.com';
     }
     
     // Withdrawals collection - users can create withdrawals for themselves, admin can access all
     match /withdrawals/{withdrawalId} {
       allow read: if request.auth != null && 
-        (resource.data.userId == request.auth.uid || request.auth.token.email == 'admin@supercoin.com');
+        (resource.data.userId == request.auth.uid || request.auth.token.email == 'admin@coinbase.com');
       allow create: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow update, delete: if request.auth != null && request.auth.token.email == 'admin@supercoin.com';
+      allow update, delete: if request.auth != null && request.auth.token.email == 'admin@coinbase.com';
     }
     
     // Deposit requests collection - users can create deposits for themselves, admin can access all
     match /depositRequests/{depositId} {
       allow read: if request.auth != null && 
-        (resource.data.userId == request.auth.uid || request.auth.token.email == 'admin@supercoin.com');
+        (resource.data.userId == request.auth.uid || request.auth.token.email == 'admin@coinbase.com');
       allow create: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow update, delete: if request.auth != null && request.auth.token.email == 'admin@supercoin.com';
+      allow update, delete: if request.auth != null && request.auth.token.email == 'admin@coinbase.com';
     }
     
     // Invitations collection - readable by all authenticated users, writable by admin only
     match /invitations/{invitationId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.token.email == 'admin@supercoin.com';
+      allow write: if request.auth != null && request.auth.token.email == 'admin@coinbase.com';
     }
     
     // Announcements collection - readable by all authenticated users, writable by admin only
     match /announcements/{announcementId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.token.email == 'admin@supercoin.com';
+      allow write: if request.auth != null && request.auth.token.email == 'admin@coinbase.com';
     }
     
     // Platform settings collection - readable by all authenticated users, writable by admin only
     match /platformSettings/{settingId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.token.email == 'admin@supercoin.com';
+      allow write: if request.auth != null && request.auth.token.email == 'admin@coinbase.com';
     }
   }
 }
