@@ -25,6 +25,7 @@ export default function MarketPage() {
   const [interval, setInterval] = useState("1")
   const [showIndicators, setShowIndicators] = useState(true)
   const { marketData, chartData, isUpdating, error } = useMarketData(symbol)
+  const tradingViewSymbol = symbol === "BTTUSDT" ? "POLONIEX:BTTUSDT" : `BINANCE:${symbol}`
   const [isChartReady, setIsChartReady] = useState(false)
   const [orderPopupState, setOrderPopupState] = useState<{ isOpen: boolean; type: "up" | "down" | null }>({
     isOpen: false,
@@ -49,7 +50,7 @@ export default function MarketPage() {
         new window.TradingView.widget({
           width: "100%",
           height: "320",
-          symbol: `BINANCE:${symbol}`,
+          symbol: tradingViewSymbol,
           interval: interval,
           timezone: "Etc/UTC",
           theme: "light",
