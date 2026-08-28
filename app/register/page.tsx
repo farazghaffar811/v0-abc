@@ -97,7 +97,7 @@ export default function RegisterPage() {
               <Input
                 type="text"
                 name="username"
-                placeholder="Please Enter Your Username"
+                placeholder="Please Enter Username or Email"
                 className="pl-10"
                 value={formData.username}
                 onChange={handleChange}

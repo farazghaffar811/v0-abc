@@ -33,8 +33,8 @@ import { DEFAULT_CURRENCY } from "@/lib/currency"
 interface AuthContextType {
   user: User | null
   userProfile: UserProfile | null
-  login: (username: string, password: string) => Promise<void>
-  register: (username: string, password: string, referralCode?: string) => Promise<void>
+  login: (identifier: string, password: string) => Promise<void>
+  register: (identifier: string, password: string, referralCode?: string) => Promise<void>
   logout: () => Promise<void>
   isLoading: boolean
   error: string | null
@@ -52,8 +52,13 @@ const INITIAL_REPUTATION = 100
 
 const handleFirebaseError = (error: any): string => {
   console.error("Firebase error:", error)
-  if (error?.code === "auth/user-not-found" || error?.code === "auth/wrong-password") {
-    return "Invalid email or password. Please try again."
+  if (
+    error?.code === "auth/user-not-found" ||
+    error?.code === "auth/wrong-password" ||
+    error?.code === "auth/invalid-credential" ||
+    error?.code === "auth/invalid-login-credentials"
+  ) {
+    return "Invalid username/email or password. Please try again."
   }
   return error?.message || "An unexpected error occurred. Please try again."
 }
@@ -180,12 +185,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user?.uid) await setDoc(doc(db, "users", user.uid), { currency: nextCurrency, updatedAt: serverTimestamp() }, { merge: true })
   }
 
-  const login = async (username: string, password: string) => {
+  const login = async (identifier: string, password: string) => {
     try {
-      const normalizedUsername = username.trim().toLowerCase()
-      const authEmail = normalizedUsername === ADMIN_EMAIL
-        ? ADMIN_EMAIL
-        : `${normalizedUsername}@users.coinbase.local`
+      const normalizedIdentifier = identifier.trim().toLowerCase()
+      if (!normalizedIdentifier) throw new Error("Please enter your username or email.")
+      const authEmail = normalizedIdentifier.includes("@")
+        ? normalizedIdentifier
+        : `${normalizedIdentifier}@users.coinbase.local`
 
       setIsLoading(true)
       setError(null)
@@ -238,13 +244,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const register = async (username: string, password: string, referralCode?: string) => {
+  const register = async (identifier: string, password: string, referralCode?: string) => {
     try {
       setIsLoading(true)
       setError(null)
-      const normalizedUsername = username.trim().toLowerCase()
-      if (!normalizedUsername) throw new Error("Please enter a username.")
-      const email = `${normalizedUsername}@users.coinbase.local`
+      const normalizedIdentifier = identifier.trim().toLowerCase()
+      if (!normalizedIdentifier) throw new Error("Please enter a username or email.")
+      const isEmail = normalizedIdentifier.includes("@")
+      const email = isEmail ? normalizedIdentifier : `${normalizedIdentifier}@users.coinbase.local`
       console.log("Starting user registration process")
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
       console.log("User created in Firebase Auth:", userCredential.user.uid)
